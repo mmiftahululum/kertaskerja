@@ -25,7 +25,7 @@ class ChildStatusController extends Controller
         $request->validate([
             'head_status_id' => 'required|exists:head_statuses,id',
             'status_name' => 'required|string|max:255',
-            'status_code' => 'required|string|max:50|unique:child_statuses',
+            'status_code' => 'required|string|max:50',
             'status_color' => 'required|string|size:7|regex:/^#[0-9A-Fa-f]{6}$/'
         ]);
 
@@ -52,7 +52,7 @@ class ChildStatusController extends Controller
         $request->validate([
             'head_status_id' => 'required|exists:head_statuses,id',
             'status_name' => 'required|string|max:255',
-            'status_code' => 'required|string|max:50|unique:child_statuses,status_code,'.$childStatus->id,
+            'status_code' => 'required|string|max:50',
             'status_color' => 'required|string|size:7|regex:/^#[0-9A-Fa-f]{6}$/'
         ]);
 

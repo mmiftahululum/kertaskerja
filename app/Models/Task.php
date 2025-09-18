@@ -32,6 +32,8 @@ class Task extends Model
         'progress_percent' => 'integer',
     ];
 
+    
+
     // Relasi: Parent task (untuk sub-tugas)
     public function parent(): BelongsTo
     {
@@ -98,4 +100,28 @@ class Task extends Model
     {
         return $query->whereNull('actual_end');
     }
+
+    // Scope: Hanya tugas yang terhapus
+    public function scopeTrashed($query)
+    {
+        return $query->onlyTrashed();
+    }
+
+    // Scope: Dengan tugas yang terhapus
+    public function scopeWithTrashed($query)
+    {
+        return $query->withTrashed();
+    }
+
+    // Di app/Models/Task.php
+    public function links(): HasMany
+    {
+        return $this->hasMany(TaskLink::class);
+    }
+
+    public function getLinksCountAttribute()
+    {
+        return $this->links()->count();
+    }
+    
 }

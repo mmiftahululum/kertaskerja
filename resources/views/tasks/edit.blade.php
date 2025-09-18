@@ -75,27 +75,61 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
-                        <select name="assignments[]" id="assignments" multiple
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                data-placeholder="Cari dan pilih karyawan...">
-                            @if(isset($employees) && $employees->count())
-                                @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}"
-                                            data-username="{{ $emp->username_git ?? '' }}"
-                                            {{ in_array($emp->id, old('assignments', (
-                                                $task->assignments->pluck('employee_id')->count()
-                                                    ? $task->assignments->pluck('employee_id')->toArray()
-                                                    : $task->assignments->pluck('id')->toArray()
-                                            ))) ? 'selected' : '' }}>
-                                        {{ $emp->nama_karyawan ?? $emp->name ?? 'Karyawan #'.$emp->id }}
-                                    </option>
-                                @endforeach
-                            @endif
-                        </select>
-                        <p class="text-sm text-gray-500 mt-1">Ketik untuk mencari, tekan Enter untuk memilih.</p>
-                    </div>
+                  <div>
+    <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
+    <select name="assignments[]" id="assignments" multiple
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            data-placeholder="Cari dan pilih karyawan...">
+        @if(isset($employees) && $employees->count())
+            @foreach($employees as $emp)
+                @php
+                    // Cara yang lebih reliable untuk cek selected
+                    $isSelected = false;
+                    foreach ($task->assignments as $assignment) {
+                        if ($assignment->id == $emp->id) {
+                            $isSelected = true;
+                            break;
+                        }
+                    }
+                    // Juga cek old values jika form di-submit dengan error
+                    $isSelected = $isSelected || (is_array(old('assignments')) && in_array($emp->id, old('assignments')));
+                @endphp
+                <option value="{{ $emp->id }}"
+                        data-username="{{ $emp->username_git ?? '' }}"
+                        {{ $isSelected ? 'selected' : '' }}>
+                    {{ $emp->nama_karyawan ?? $emp->name ?? 'Karyawan #'.$emp->id }}
+                </option>
+            @endforeach
+        @endif
+    </select>
+    <p class="text-sm text-gray-500 mt-1">Ketik untuk mencari, tekan Enter untuk memilih.</p>
+</div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">Link References</label>
+    <div id="links-container">
+        @if(old('link_names', $task->links->pluck('name')->toArray()))
+            @foreach(old('link_names', $task->links->pluck('name')->toArray()) as $index => $name)
+                <div class="link-item flex gap-2 mb-2">
+                    <input type="text" name="link_names[]" 
+                           value="{{ $name }}"
+                           placeholder="Nama Link"
+                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="url" name="link_urls[]" 
+                           value="{{ old('link_urls.' . $index, $task->links[$index]->url ?? '') }}"
+                           placeholder="https://example.com"
+                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <button type="button" class="remove-link bg-red-500 text-white px-3 rounded-md hover:bg-red-600">
+                        Hapus
+                    </button>
+                </div>
+            @endforeach
+        @endif
+    </div>
+    <button type="button" id="add-link" class="mt-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
+        + Tambah Link
+    </button>
+</div>
 
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700">Lampiran File (opsional)</label>
@@ -196,5 +230,41 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         document.getElementById('current_status_id').innerHTML = '<option value="">Pilih Status Child</option>';
     }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const linksContainer = document.getElementById('links-container');
+    const addLinkBtn = document.getElementById('add-link');
+    
+    addLinkBtn.addEventListener('click', function() {
+        const linkItem = document.createElement('div');
+        linkItem.className = 'link-item flex gap-2 mb-2';
+        linkItem.innerHTML = `
+            <input type="text" name="link_names[]" 
+                   placeholder="Nama Link"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <input type="url" name="link_urls[]" 
+                   placeholder="https://example.com"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <button type="button" class="remove-link bg-red-500 text-white px-3 rounded-md hover:bg-red-600">
+                Hapus
+            </button>
+        `;
+        linksContainer.appendChild(linkItem);
+        
+        // Add event listener to remove button
+        linkItem.querySelector('.remove-link').addEventListener('click', function() {
+            linkItem.remove();
+        });
+    });
+    
+    // Add event listeners to existing remove buttons
+    document.querySelectorAll('.remove-link').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.link-item').remove();
+        });
+    });
 });
 </script>

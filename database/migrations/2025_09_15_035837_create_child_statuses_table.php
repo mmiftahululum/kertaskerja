@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('head_status_id')->constrained('head_statuses')->onDelete('cascade');
             $table->string('status_name');
-            $table->string('status_code')->unique();
+            $table->string('status_code');
             $table->string('status_color', 7); // untuk hex color #FFFFFF
             $table->timestamps();
         });

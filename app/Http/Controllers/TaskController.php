@@ -123,6 +123,17 @@ class TaskController extends Controller
             $task->assignments()->sync($pivot);
         }
 
+         if ($request->has('link_names') && is_array($request->link_names)) {
+            foreach ($request->link_names as $index => $name) {
+                if (!empty($name) && !empty($request->link_urls[$index])) {
+                    $task->links()->create([
+                        'name' => $name,
+                        'url' => $request->link_urls[$index]
+                    ]);
+                }
+            }
+        }
+
         return redirect()->route('tasks.index')
             ->with('success', 'Tugas berhasil dibuat');
     }
@@ -135,12 +146,13 @@ class TaskController extends Controller
      */
     public function edit($id)
     {
-        $task = Task::find($id);
+     
+          $task = Task::with(['assignments', 'links'])->find($id); // Tambahkan with('links')
 
-        if (!$task) {
-            return redirect()->route('tasks.index')
-                ->with('error', 'Tugas tidak ditemukan');
-        }
+       if (!$task) {
+        return redirect()->route('tasks.index')
+            ->with('error', 'Tugas tidak ditemukan');
+    }
 
         $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
         $employees = Karyawan::select('id', 'nama_karyawan')->get();
@@ -159,46 +171,62 @@ class TaskController extends Controller
     {
         $task = Task::find($id);
 
-        if (!$task) {
+         if (!$task) {
             return redirect()->route('tasks.index')
                 ->with('error', 'Tugas tidak ditemukan');
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:tasks,id',
-            'head_status_id' => 'required|exists:head_statuses,id',
-            'current_status_id' => 'required|exists:child_statuses,id',
-            'planned_start' => 'nullable|date',
-            'planned_end' => 'nullable|date|after_or_equal:planned_start',
-            'progress_percent' => 'nullable|integer|min:0|max:100',
-        ]);
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'parent_id' => 'nullable|exists:tasks,id',
+        'head_status_id' => 'required|exists:head_statuses,id',
+        'current_status_id' => 'required|exists:child_statuses,id',
+        'planned_start' => 'nullable|date',
+        'planned_end' => 'nullable|date|after_or_equal:planned_start',
+        'progress_percent' => 'nullable|integer|min:0|max:100',
+        'link_names' => 'nullable|array',
+        'link_names.*' => 'string|max:255',
+        'link_urls' => 'nullable|array',
+        'link_urls.*' => 'url',
+    ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput();
+    }
+
+    $task->update($request->except(['assignments', 'link_names', 'link_urls']));
+
+    // Handle assignments
+    if ($request->has('assignments') && is_array($request->assignments)) {
+        $now = now();
+        $pivot = collect($request->assignments)->mapWithKeys(function ($id) use ($now) {
+            return [$id => [
+                'assigned_at'  => $now,
+                'completed_at' => null,
+                'is_completed' => false,
+            ]];
+        })->toArray();
+        $task->assignments()->sync($pivot);
+    }
+
+    // Handle links
+     $task->links()->delete(); // 🔥 Hapus semua link lama
+    if ($request->has('link_names') && is_array($request->link_names)) {
+        foreach ($request->link_names as $index => $name) {
+            if (!empty($name) && !empty($request->link_urls[$index])) {
+                $task->links()->create([
+                    'name' => $name,
+                    'url' => $request->link_urls[$index]
+                ]);
+            }
         }
+    }
 
-        $task->update($request->except('assignments'));
-
-        if ($request->has('assignments') && is_array($request->assignments)) {
-            // map daftar id menjadi format id => [pivot data]
-            $now = now();
-            $pivot = collect($request->assignments)->mapWithKeys(function ($id) use ($now) {
-                return [$id => [
-                    'assigned_at'  => $now,
-                    'completed_at' => null,
-                    'is_completed' => false,
-                ]];
-            })->toArray();
-
-            $task->assignments()->sync($pivot);
-        }
-
-        return redirect()->route('tasks.index')
-            ->with('success', 'Tugas berhasil diperbarui');
+    return redirect()->route('tasks.index')
+        ->with('success', 'Tugas berhasil dibuat');
     }
 
     public function updateStatus(Request $request, Task $task)
@@ -217,31 +245,6 @@ class TaskController extends Controller
         return response()->json(['message' => 'Status task berhasil diperbarui.', 'task' => $task->fresh()]);
     }
 
-
-    /**
-     * Menghapus tugas dan redirect ke index dengan flash message
-     *
-     * @param int $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy($id)
-    {
-        $task = Task::find($id);
-
-        if (!$task) {
-            return redirect()->route('tasks.index')
-                ->with('error', 'Tugas tidak ditemukan');
-        }
-
-        $task->files()->delete();
-        $task->comments()->delete();
-        $task->assignments()->detach();
-
-        $task->delete();
-
-        return redirect()->route('tasks.index')
-            ->with('success', 'Tugas berhasil dihapus');
-    }
 
     /**
      * Mengambil semua status child berdasarkan head_status_id 
@@ -286,5 +289,75 @@ class TaskController extends Controller
             'data' => $headStatuses,
             'message' => 'Head status berhasil diambil'
         ]);
+    }
+
+     public function destroy($id)
+    {
+        $task = Task::find($id);
+
+        if (!$task) {
+            return redirect()->route('tasks.index')
+                ->with('error', 'Tugas tidak ditemukan');
+        }
+
+        // Hapus menggunakan soft delete
+        $task->delete();
+
+        return redirect()->route('tasks.index')
+            ->with('success', 'Tugas berhasil dihapus (dipindahkan ke trash)');
+    }
+
+    /**
+     * Menampilkan tugas yang terhapus (trash)
+     */
+    public function trash()
+    {
+        $tasks = Task::onlyTrashed()
+            ->with(['headStatus', 'currentStatus', 'assignments'])
+            ->orderBy('deleted_at', 'DESC')
+            ->paginate(10);
+
+        return view('tasks.trash', compact('tasks'));
+    }
+
+    /**
+     * Restore tugas dari trash
+     */
+    public function restore($id)
+    {
+        $task = Task::onlyTrashed()->find($id);
+
+        if (!$task) {
+            return redirect()->route('tasks.trash')
+                ->with('error', 'Tugas tidak ditemukan di trash');
+        }
+
+        $task->restore();
+
+        return redirect()->route('tasks.trash')
+            ->with('success', 'Tugas berhasil dipulihkan');
+    }
+
+    /**
+     * Hapus permanen tugas dari trash
+     */
+    public function forceDelete($id)
+    {
+        $task = Task::onlyTrashed()->find($id);
+
+        if (!$task) {
+            return redirect()->route('tasks.trash')
+                ->with('error', 'Tugas tidak ditemukan di trash');
+        }
+
+        // Hapus relasi sebelum force delete
+        $task->files()->delete();
+        $task->comments()->delete();
+        $task->assignments()->detach();
+
+        $task->forceDelete();
+
+        return redirect()->route('tasks.trash')
+            ->with('success', 'Tugas berhasil dihapus permanen');
     }
 }

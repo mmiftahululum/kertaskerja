@@ -108,6 +108,32 @@
 
                       </div>
 
+                      <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">Link References</label>
+    <div id="links-container">
+        @if(old('link_names', $task->links->pluck('name')->toArray()))
+            @foreach(old('link_names', $task->links->pluck('name')->toArray()) as $index => $name)
+                <div class="link-item flex gap-2 mb-2">
+                    <input type="text" name="link_names[]" 
+                           value="{{ $name }}"
+                           placeholder="Nama Link"
+                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="url" name="link_urls[]" 
+                           value="{{ old('link_urls.' . $index, $task->links[$index]->url ?? '') }}"
+                           placeholder="https://example.com"
+                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <button type="button" class="remove-link bg-red-500 text-white px-3 rounded-md hover:bg-red-600">
+                        Hapus
+                    </button>
+                </div>
+            @endforeach
+        @endif
+    </div>
+    <button type="button" id="add-link" class="mt-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
+        + Tambah Link
+    </button>
+</div>
+
                     {{-- Input file jika diperlukan --}}
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700">Lampiran File (opsional)</label>
@@ -219,4 +245,41 @@
                 childStatusSelect.innerHTML = '<option value="">Gagal memuat data</option>';
             });
     });
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const linksContainer = document.getElementById('links-container');
+    const addLinkBtn = document.getElementById('add-link');
+    
+    addLinkBtn.addEventListener('click', function() {
+        const linkItem = document.createElement('div');
+        linkItem.className = 'link-item flex gap-2 mb-2';
+        linkItem.innerHTML = `
+            <input type="text" name="link_names[]" 
+                   placeholder="Nama Link"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <input type="url" name="link_urls[]" 
+                   placeholder="https://example.com"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <button type="button" class="remove-link bg-red-500 text-white px-3 rounded-md hover:bg-red-600">
+                Hapus
+            </button>
+        `;
+        linksContainer.appendChild(linkItem);
+        
+        // Add event listener to remove button
+        linkItem.querySelector('.remove-link').addEventListener('click', function() {
+            linkItem.remove();
+        });
+    });
+    
+    // Add event listeners to existing remove buttons
+    document.querySelectorAll('.remove-link').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.link-item').remove();
+        });
+    });
+});
 </script>
