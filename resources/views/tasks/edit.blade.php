@@ -14,6 +14,22 @@
 
                     <input type="hidden" name="parent_id" id="parent_id" value="{{ old('parent_id', $task->parent_id) }}">
 
+                    <!-- Parent Task -->
+                    <div class="mb-4">
+                        <label for="parent_id" class="block text-sm font-medium text-gray-700">Parent Task</label>
+                        <select name="parent_id" id="parent_id_set" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Tidak ada (Task Utama)</option>
+                            @foreach ($mTasks as $mTask)
+                                <option data-name="{{ $mTask->title }}" value="{{ $mTask->id }}" {{ $mTask->id == $task->parent_id ? 'selected' : '' }}>
+                                    {{ $mTask->title }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('parent_id')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700">Judul Tugas</label>
                         <input type="text" name="title" id="title" value="{{ old('title', $task->title) }}"
@@ -154,6 +170,10 @@
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
+<!-- Styles and Scripts -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <style>
     .ts-control,
     .ts-control .item,
@@ -267,4 +287,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+</script>
+
+
+<script>
+  // Script untuk Select2 status task
+    $(document).ready(function () {
+        $('#parent_id_set').select2();
+    });
 </script>

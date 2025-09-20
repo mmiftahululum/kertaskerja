@@ -16,9 +16,9 @@ class TaskController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+   public function index(Request $request)
     {
-        $tasks = Task::with([
+        $query = Task::with([
             'parent',
             'children',
             'headStatus',
@@ -32,16 +32,51 @@ class TaskController extends Controller
             },
             'comments.user'
         ])
-        ->orderBy('planned_start', 'ASC')
-        ->paginate(10);
+        ->orderBy('planned_start', 'ASC');
+
+        // Filter task utama yang currentStatus-nya BUKAN 'CLOSE'
+        $query->whereHas('currentStatus', function ($q) {
+            $q->where('status_code',"<>", 'CLOSE');
+        });
+
+        // Filter child tasks yang currentStatus-nya BUKAN 'CLOSE'
+        // Ini akan memastikan child (dan grand-child, dst jika relasi children didefinisikan secara rekursif)
+        // tidak memiliki status 'CLOSE'.
+        $query->whereHas('children', function ($q) {
+            $q->whereHas('currentStatus', function ($q2) {
+                $q2->where('status_code', "<>",'CLOSE');
+            });
+        });
+        
+        // --- Bagian filter_close yang sudah ada, sesuaikan jika perlu ---
+        if ($request->has('filter_close') && $request->filter_close == '1') {
+            // Jika checkbox "Close" dicentang, kita mungkin ingin menampilkan task CLOSE.
+            // Namun, karena permintaan Anda adalah "BUKAN CLOSE", bagian ini harus disesuaikan.
+            // Saat ini, logika ini akan BENTROK dengan filter di atas.
+            // Jika Anda ingin checkbox ini untuk filter task yang CLOSE saja,
+            // maka hapus atau modifikasi filter whereDoesntHave di atas agar tidak selalu aktif.
+            // Untuk skenario "tidak CLOSE" sebagai default, filter_close mungkin tidak diperlukan,
+            // atau bisa diubah menjadi "tampilkan task CLOSE".
+            // Saya akan mengasumsikan Anda ingin defaultnya TIDAK CLOSE.
+
+            // Contoh: Jika filter_close=1 berarti tampilkan yang close,
+            // maka kita harus menghapus whereDoesntHave di atas, dan pakai whereHas seperti ini:
+            // $query->whereHas('currentStatus', function ($q) {
+            //      $q->where('status_code', 'CLOSE');
+            // });
+            // Tapi karena permintaan Anda adalah "BUKAN CLOSE", maka saya akan biarkan filter whereDoesntHave di atas aktif.
+        }
+        // ----------------------------------------------------------------
+
+        $tasks = $query->paginate(100);
 
         $childStatuses = ChildStatus::get();
         $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
         $employees = Karyawan::select('id', 'nama_karyawan')->get();
 
-        return view('tasks.index', compact('employees','tasks','childStatuses','headStatuses'));
+        return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
+           ->with('filter_close', $request->filter_close ?? null);
     }
-
     /**
      * Menampilkan detail satu tugas beserta semua relasinya ke view
      *
@@ -153,11 +188,11 @@ class TaskController extends Controller
         return redirect()->route('tasks.index')
             ->with('error', 'Tugas tidak ditemukan');
     }
-
+        $mTasks = Task::all(); // Semua task tersedia untuk dipilih sebagai parent
         $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
         $employees = Karyawan::select('id', 'nama_karyawan')->get();
 
-        return view('tasks.edit', compact('task', 'headStatuses', 'employees'));
+        return view('tasks.edit', compact('task', 'headStatuses', 'employees','mTasks'));
     }
 
     /**

@@ -10,9 +10,8 @@
         </button>
         @endif
     </td>
-    <td class="px-1 py-1 whitespace-nowrap text-md font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
-    
-        {{ $task->title }}
+    <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
+          {{ $task->title }}
         </td>
         <td>
 <button
@@ -122,29 +121,19 @@
     @endif
 </td>
 
-    <td class="px-1 py-1 text-sm text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700 pointer" onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
         <div x-data="{ expanded: false }">
             @php
                 $lastComment = $task->comments->sortByDesc('created_at')->first();
             @endphp
             @if ($lastComment)
-                <div class="text-sm">
+                <div class="text-xs">
                     <strong>{{ $lastComment->user->name ?? 'N/A' }}:</strong> {{ Str::limit($lastComment->comment, 50) }}
                     <span class="text-gray-500">({{ $lastComment->created_at->diffForHumans() }})</span>
                 </div>
             @else
                 <span class="text-gray-500">Belum ada komentar.</span> <br/>
             @endif
-          <button
-    type="button"
-    class="text-blue-500 hover:text-blue-700 focus:outline-none"
-    onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})"
-    title="Tambah Komentar"
->
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-</button>
         </div>
     </td>
  

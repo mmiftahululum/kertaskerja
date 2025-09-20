@@ -9,10 +9,35 @@
         <div class="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
                 <div class="p-4 sm:p-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="items-center justify-between mb-4">
                         <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
                         <div class="flex items-center gap-2">
-                            <form method="GET" action="{{ route('tasks.index') }}" class="flex items-center gap-2">
+
+                                    <form method="GET" action="{{ route('tasks.index') }}" id="filterForm">
+                                        <label class="border rounded-md  px-2 py-1">
+                                            <input class="mb-1" type="checkbox" name="filter_close" value="1" 
+                                            {{ request('filter_close') == '1' ? 'checked' : '' }} 
+                                            onchange="document.getElementById('filterForm').submit();">
+                                           Close
+                                        </label>
+                                    </form>
+
+                    
+                                    <select name="operator" class="select-s1 border border-gray-300 rounded-md">
+                                         <option value="" selected>Pilih Operator</option>
+                                        <option value="=">= Sama dengan</option>
+                                        <option value="!=" >!= Tidak sama dengan</option>
+                                    </select>
+
+                                
+                                    <select name="status_ids[]" class="select-s1 select2" multiple="multiple" style="width: 400px;">
+                                        @foreach($childStatuses as $status)
+                                            <option data-color="{{ $status->status_color ?? '#000000' }}" value="{{ $status->id }}">{{ $status->status_name }} ({{ $status->status_code }})</option>
+                                        @endforeach
+                                    </select>
+
+                                     <button class="bg-white border border-gray-300 px-3 py-1 rounded-md text-sm hover:bg-gray-50">Terapkan</button>
+
                                 <input
                                     type="search"
                                     name="q"
@@ -21,7 +46,6 @@
                                     class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
                                 <button class="bg-white border border-gray-300 px-3 py-1 rounded-md text-sm hover:bg-gray-50">Cari</button>
-                            </form>
 
                             <a href="{{ route('tasks.create') }}">
                                 <button class="bg-cyan-500 rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600 focus:outline-none">Tambah Task</button>
@@ -218,8 +242,6 @@
                     <div>
     <label class="block text-sm font-medium text-gray-700 mb-2">Link References</label>
     <div id="links-container">
-        @if(old('link_names', $task->links->pluck('name')->toArray()))
-            @foreach(old('link_names', $task->links->pluck('name')->toArray()) as $index => $name)
                 <div class="link-item flex gap-2 mb-2">
                     <input type="text" name="link_names[]" 
                            value=""
@@ -233,8 +255,6 @@
                         Hapus
                     </button>
                 </div>
-            @endforeach
-        @endif
     </div>
     <button type="button" id="add-link" class="mt-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
         + Tambah Link
@@ -290,12 +310,87 @@
     .child-task {
         background-color: #f9fafb;
     }
+
+    .select-s1 {
+        font-size: 14px; /* Sesuaikan dengan input */
+        padding: 2px 5px; /* Sesuaikan padding agar tampilan seragam */
+        height: 30px; /* Sesuaikan tinggi sesuai input */
+        border: 1px solid #cbd5e1; /* Contoh border warna abu-abu */
+        border-radius: 4px; /* Membuat border agak melengkung */
+        outline: none;
+    }
+
+    .select2-container{
+        height: 30px !important;
+    }
+
+    .select2-results__option{
+        font-size: 14px; 
+    }
+
+    .select2-selection__rendered span{
+        font-size: 12px
+        ;
+    }
+
 </style>
 
 
 <script>
     // Script untuk Select2 status task
     $(document).ready(function () {
+
+          $('.select2').select2({
+
+             placeholder: "Pilih status...",
+              allowClear: true,
+             templateResult: function (data) {
+                if (!data.id) return data.text;
+
+                var color = $(data.element).data('color') || '#000000';
+
+                var $circle = $('<span></span>').css({
+                    'display': 'inline-block',
+                    'width': '12px',
+                    'height': '12px',
+                    'border-radius': '50%',
+                    'background-color': color,
+                    'margin-right': '8px',
+                    'vertical-align': 'middle'
+                });
+
+                var $text = $('<span></span>').text(data.text).css({
+                    'vertical-align': 'middle'
+                });
+
+                return $('<span></span>').append($circle).append($text);
+            },
+            templateSelection: function (data) {
+                if (!data.id) return data.text;
+
+                var color = $(data.element).data('color') || '#000000';
+
+                var $circle = $('<span></span>').css({
+                    'display': 'inline-block',
+                    'width': '12px',
+                    'height': '12px',
+                    'border-radius': '50%',
+                    'background-color': color,
+                    'margin-right': '8px',
+                    'vertical-align': 'middle'
+                });
+
+                var $text = $('<span></span>').text(data.text).css({
+                    'vertical-align': 'middle'
+                });
+
+                return $('<span></span>').append($circle).append($text);
+            }
+            
+             
+          });
+
+
         $('.statustask').select2({
             templateResult: function (data) {
                 if (!data.id) return data.text;
