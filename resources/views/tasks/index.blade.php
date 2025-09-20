@@ -9,49 +9,100 @@
         <div class="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
                 <div class="p-4 sm:p-6">
-                    <div class="items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
-                        <div class="flex items-center gap-2">
+                   <div class="items-center justify-between mb-4">
+    <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
+    
+    <div class="flex flex-wrap items-center gap-4 mt-4">
+        <!-- Form Filter -->
+        <form method="GET" action="{{ route('tasks.index') }}" id="filterForm" class="flex flex-wrap items-center gap-2">
+            
+            <!-- Checkbox Filter Close -->
+            <label class="border rounded-md px-2 py-1 flex items-center gap-1">
+                <input class="rounded" type="checkbox" name="filter_close" value="1" 
+                       {{ request('filter_close') == '1' ? 'checked' : '' }} 
+                       onchange="document.getElementById('filterForm').submit();">
+                <span class="text-sm">Close</span>
+            </label>
 
-                                    <form method="GET" action="{{ route('tasks.index') }}" id="filterForm">
-                                        <label class="border rounded-md  px-2 py-1">
-                                            <input class="mb-1" type="checkbox" name="filter_close" value="1" 
-                                            {{ request('filter_close') == '1' ? 'checked' : '' }} 
-                                            onchange="document.getElementById('filterForm').submit();">
-                                           Close
-                                        </label>
-                                    </form>
+            <!-- Search Input -->
+            <input type="search" name="q" value="{{ request('q') }}"
+                   placeholder="Cari judul task..."
+                   class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48">
 
-                    
-                                    <select name="operator" class="select-s1 border border-gray-300 rounded-md">
-                                         <option value="" selected>Pilih Operator</option>
-                                        <option value="=">= Sama dengan</option>
-                                        <option value="!=" >!= Tidak sama dengan</option>
-                                    </select>
+            <!-- Operator Select -->
+            <select name="operator" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Pilih Operator</option>
+                <option value="=" {{ request('operator') == '=' ? 'selected' : '' }}>= Sama dengan</option>
+                <option value="!=" {{ request('operator') == '!=' ? 'selected' : '' }}>!= Tidak sama dengan</option>
+            </select>
 
-                                
-                                    <select name="status_ids[]" class="select-s1 select2" multiple="multiple" style="width: 400px;">
-                                        @foreach($childStatuses as $status)
-                                            <option data-color="{{ $status->status_color ?? '#000000' }}" value="{{ $status->id }}">{{ $status->status_name }} ({{ $status->status_code }})</option>
-                                        @endforeach
-                                    </select>
+            <!-- Status Multi-Select -->
+            <select name="status_ids[]" class="select2-filter" multiple="multiple" style="width: 300px;" data-placeholder="Pilih status...">
+                @foreach($childStatuses as $status)
+                    <option value="{{ $status->id }}" 
+                            data-color="{{ $status->status_color ?? '#000000' }}"
+                            {{ in_array($status->id, request('status_ids', [])) ? 'selected' : '' }}>
+                        {{ $status->status_name }} ({{ $status->status_code }})
+                    </option>
+                @endforeach
+            </select>
 
-                                     <button class="bg-white border border-gray-300 px-3 py-1 rounded-md text-sm hover:bg-gray-50">Terapkan</button>
+            <!-- Submit Button -->
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm">
+                Terapkan
+            </button>
 
-                                <input
-                                    type="search"
-                                    name="q"
-                                    value="{{ request('q') }}"
-                                    placeholder="Cari judul task"
-                                    class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                <button class="bg-white border border-gray-300 px-3 py-1 rounded-md text-sm hover:bg-gray-50">Cari</button>
+            <!-- Reset Button -->
+            <a href="{{ route('tasks.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded-md text-sm">
+                Reset
+            </a>
 
-                            <a href="{{ route('tasks.create') }}">
-                                <button class="bg-cyan-500 rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600 focus:outline-none">Tambah Task</button>
-                            </a>
-                        </div>
-                    </div>
+        </form>
+
+        <!-- Add Task Button -->
+        <a href="{{ route('tasks.create') }}">
+            <button class="bg-cyan-500 rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600 focus:outline-none">
+                Tambah Task
+            </button>
+        </a>
+    </div>
+
+    <!-- Filter Summary -->
+    @if(request('filter_close') || request('q') || request('operator') || request('status_ids'))
+        <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+            <div class="flex flex-wrap gap-2 text-sm">
+                <span class="text-gray-600">Filter aktif:</span>
+                
+                @if(request('filter_close') == '1')
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+                        Tampilkan CLOSE
+                    </span>
+                @endif
+
+                @if(request('q'))
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        Judul: "{{ request('q') }}"
+                    </span>
+                @endif
+
+                @if(request('operator') && request('status_ids'))
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                        Status {{ request('operator') == '=' ? 'sama dengan' : 'tidak sama dengan' }}:
+                        @foreach($childStatuses->whereIn('id', request('status_ids', [])) as $status)
+                            <span class="inline-block w-2 h-2 rounded-full mr-1" 
+                                  style="background-color: {{ $status->status_color }}"></span>
+                            {{ $status->status_name }}{{ !$loop->last ? ',' : '' }}
+                        @endforeach
+                    </span>
+                @endif
+
+                <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                    {{ $tasks->total() }} task ditemukan
+                </span>
+            </div>
+        </div>
+    @endif
+</div>
 
                     @if(session('success'))
                         <div class="mb-4">
@@ -338,60 +389,10 @@
 
 <script>
     // Script untuk Select2 status task
-    $(document).ready(function () {
+    // Script untuk Filter - Tambahkan setelah script Select2 yang sudah ada
+$(document).ready(function () {
 
-          $('.select2').select2({
-
-             placeholder: "Pilih status...",
-              allowClear: true,
-             templateResult: function (data) {
-                if (!data.id) return data.text;
-
-                var color = $(data.element).data('color') || '#000000';
-
-                var $circle = $('<span></span>').css({
-                    'display': 'inline-block',
-                    'width': '12px',
-                    'height': '12px',
-                    'border-radius': '50%',
-                    'background-color': color,
-                    'margin-right': '8px',
-                    'vertical-align': 'middle'
-                });
-
-                var $text = $('<span></span>').text(data.text).css({
-                    'vertical-align': 'middle'
-                });
-
-                return $('<span></span>').append($circle).append($text);
-            },
-            templateSelection: function (data) {
-                if (!data.id) return data.text;
-
-                var color = $(data.element).data('color') || '#000000';
-
-                var $circle = $('<span></span>').css({
-                    'display': 'inline-block',
-                    'width': '12px',
-                    'height': '12px',
-                    'border-radius': '50%',
-                    'background-color': color,
-                    'margin-right': '8px',
-                    'vertical-align': 'middle'
-                });
-
-                var $text = $('<span></span>').text(data.text).css({
-                    'vertical-align': 'middle'
-                });
-
-                return $('<span></span>').append($circle).append($text);
-            }
-            
-             
-          });
-
-
-        $('.statustask').select2({
+     $('.statustask').select2({
             templateResult: function (data) {
                 if (!data.id) return data.text;
 
@@ -435,7 +436,172 @@
                 return $('<span></span>').append($circle).append($text);
             }
         });
+
+    
+    // ===== SELECT2 UNTUK FILTER STATUS =====
+    $('.select2-filter').select2({
+        placeholder: "Pilih status...",
+        allowClear: true,
+        templateResult: function (data) {
+            if (!data.id) return data.text;
+
+            var color = $(data.element).data('color') || '#000000';
+            var $circle = $('<span></span>').css({
+                'display': 'inline-block',
+                'width': '12px',
+                'height': '12px',
+                'border-radius': '50%',
+                'background-color': color,
+                'margin-right': '8px',
+                'vertical-align': 'middle'
+            });
+
+            var $text = $('<span></span>').text(data.text).css({
+                'vertical-align': 'middle'
+            });
+
+            return $('<span></span>').append($circle).append($text);
+        },
+        templateSelection: function (data) {
+            if (!data.id) return data.text;
+
+            var color = $(data.element).data('color') || '#000000';
+            var $circle = $('<span></span>').css({
+                'display': 'inline-block',
+                'width': '10px',
+                'height': '10px',
+                'border-radius': '50%',
+                'background-color': color,
+                'margin-right': '6px',
+                'vertical-align': 'middle'
+            });
+
+            var $text = $('<span></span>').text(data.text).css({
+                'vertical-align': 'middle',
+                'font-size': '13px'
+            });
+
+            return $('<span></span>').append($circle).append($text);
+        }
     });
+
+    // ===== AUTO SUBMIT KETIKA OPERATOR BERUBAH =====
+    $('select[name="operator"]').on('change', function() {
+        var operator = $(this).val();
+        var statusSelect = $('.select2-filter');
+        
+        if (operator === '') {
+            // Jika operator kosong, disable status selection
+            statusSelect.prop('disabled', true).trigger('change');
+        } else {
+            // Enable status selection
+            statusSelect.prop('disabled', false);
+        }
+    });
+
+    // ===== AUTO SUBMIT KETIKA STATUS BERUBAH =====
+    $('.select2-filter').on('change', function() {
+        var statusIds = $(this).val();
+        var operator = $('select[name="operator"]').val();
+        
+        // Auto submit jika operator sudah dipilih dan ada status
+        if (operator && statusIds && statusIds.length > 0) {
+            setTimeout(function() {
+                $('#filterForm').submit();
+            }, 300); // Delay 300ms untuk UX yang lebih baik
+        }
+    });
+
+    // ===== SEARCH INPUT DENGAN DEBOUNCE =====
+    let searchTimeout;
+    $('input[name="q"]').on('input', function() {
+        clearTimeout(searchTimeout);
+        var query = $(this).val().trim();
+        
+        searchTimeout = setTimeout(function() {
+            if (query.length >= 3 || query.length === 0) {
+                $('#filterForm').submit();
+            }
+        }, 800); // Delay 800ms untuk search
+    });
+
+    // ===== SUBMIT FORM DENGAN ENTER =====
+    $('input[name="q"]').on('keypress', function(e) {
+        if (e.which === 13) { // Enter key
+            clearTimeout(searchTimeout);
+            $('#filterForm').submit();
+        }
+    });
+
+    // ===== INITIALIZE DISABLED STATE =====
+    var initialOperator = $('select[name="operator"]').val();
+    if (!initialOperator) {
+        $('.select2-filter').prop('disabled', true);
+    }
+
+    // ===== LOADING STATE UNTUK FORM =====
+    $('#filterForm').on('submit', function() {
+        var submitBtn = $(this).find('button[type="submit"]');
+        var originalText = submitBtn.text();
+        
+        submitBtn.prop('disabled', true).text('Memproses...');
+        
+        // Reset setelah 5 detik (fallback)
+        setTimeout(function() {
+            submitBtn.prop('disabled', false).text(originalText);
+        }, 5000);
+    });
+
+    // ===== CLEAR FILTER FUNCTION =====
+    window.clearFilter = function(filterType) {
+        var form = $('#filterForm');
+        
+        switch(filterType) {
+            case 'search':
+                $('input[name="q"]').val('');
+                break;
+            case 'operator':
+                $('select[name="operator"]').val('');
+                $('.select2-filter').val(null).trigger('change').prop('disabled', true);
+                break;
+            case 'status':
+                $('.select2-filter').val(null).trigger('change');
+                break;
+            case 'close':
+                $('input[name="filter_close"]').prop('checked', false);
+                break;
+        }
+        
+        form.submit();
+    };
+
+    // ===== QUICK FILTER FUNCTIONS =====
+    window.quickFilterStatus = function(statusId, operator = '=') {
+        $('select[name="operator"]').val(operator);
+        $('.select2-filter').val([statusId]).trigger('change').prop('disabled', false);
+        $('#filterForm').submit();
+    };
+
+    window.quickFilterSearch = function(query) {
+        $('input[name="q"]').val(query);
+        $('#filterForm').submit();
+    };
+
+    // ===== EXPORT FILTERED DATA =====
+    window.exportFilteredData = function() {
+        var formData = $('#filterForm').serialize();
+        var exportUrl = "{{ route('tasks.export-filtered') }}?" + formData;
+        
+        // Bisa menggunakan window.open atau AJAX
+        $.get(exportUrl)
+            .done(function(response) {
+                alert('Export berhasil! Total: ' + response.total_tasks + ' task');
+            })
+            .fail(function() {
+                alert('Export gagal. Silakan coba lagi.');
+            });
+    };
+});
 
     // Script untuk modal child task
     function openCreateChildModal(parentId, parentTitle, heatstatusid) {
@@ -540,30 +706,72 @@
         document.getElementById('comment-list').innerHTML = '<p class="text-gray-500 text-sm">Tidak ada komentar.</p>';
     }
 
-    function loadComments(taskId) {
-        fetch(`/tasks/${taskId}/comments`)
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('comment-list');
-                if (data.length === 0) {
-                    list.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada komentar.</p>';
-                    return;
+ function loadComments(taskId) {
+    fetch(`/tasks/${taskId}/comments`)
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('comment-list');
+
+            if (data.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada komentar.</p>';
+                return;
+            }
+
+            // urutkan komentar dari lama ke baru
+            data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            list.innerHTML = '';
+
+            data.forEach((comment, index) => {
+                // kalau bukan komentar pertama → tambahkan selang waktu SEBELUM komentar ini
+                if (index > 0) {
+                    const prev = new Date(data[index - 1].created_at);
+                    const curr = new Date(comment.created_at);
+                    const diffText = timeDiff(prev, curr);
+
+                    const diffDiv = document.createElement('div');
+                    diffDiv.className = 'my-2 text-xs text-gray-600 italic text-center';
+                    diffDiv.innerHTML = `⏱ Selang ${diffText}`;
+                    list.appendChild(diffDiv);
                 }
-                list.innerHTML = '';
-                data.forEach(comment => {
-                    const div = document.createElement('div');
-                    div.className = 'p-2 border rounded bg-gray-50';
-                    div.innerHTML = `
-                        <p class="text-sm"><strong>${comment.user_name}</strong> – ${new Date(comment.created_at).toLocaleString()}</p>
-                        <p class="mt-1 text-gray-700">${comment.comment}</p>
-                    `;
-                    list.appendChild(div);
-                });
-            })
-            .catch(err => {
-                console.error('Gagal memuat komentar', err);
+
+                // kotak komentar
+                const div = document.createElement('div');
+                div.className = 'p-2 border rounded bg-gray-50';
+                div.innerHTML = `
+                    <p class="text-sm">
+                        <strong>${comment.user_name}</strong> – 
+                        ${new Date(comment.created_at).toLocaleString('id-ID')}
+                    </p>
+                    <p class="mt-1 text-gray-700">${comment.comment}</p>
+                `;
+                list.appendChild(div);
             });
-    }
+        })
+        .catch(err => {
+            console.error('Gagal memuat komentar', err);
+        });
+}
+
+// helper: selisih antar komentar
+function timeDiff(prev, curr) {
+    let diff = Math.abs(curr - prev) / 1000; // detik
+    let days = Math.floor(diff / 86400);
+    diff -= days * 86400;
+    let hours = Math.floor(diff / 3600);
+    diff -= hours * 3600;
+    let minutes = Math.floor(diff / 60);
+
+    let parts = [];
+    if (days > 0) parts.push(days + " hari");
+    if (hours > 0) parts.push(hours + " jam");
+    if (minutes > 0) parts.push(minutes + " menit");
+    if (parts.length === 0) parts.push("beberapa detik");
+
+    return parts.join(" ");
+}
+
+
 
     // Fungsi update task status
     async function updateTaskStatus(taskId, newStatusId) {

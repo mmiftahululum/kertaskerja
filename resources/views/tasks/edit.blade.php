@@ -20,6 +20,10 @@
                         <select name="parent_id" id="parent_id_set" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="">Tidak ada (Task Utama)</option>
                             @foreach ($mTasks as $mTask)
+                                 @if($task->id ==  $mTask->id)
+                                    @continue
+                                @endif
+
                                 <option data-name="{{ $mTask->title }}" value="{{ $mTask->id }}" {{ $mTask->id == $task->parent_id ? 'selected' : '' }}>
                                     {{ $mTask->title }}
                                 </option>

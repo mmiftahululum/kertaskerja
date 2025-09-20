@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('tasks', TaskController::class);
 
     // routes/web.php
+    Route::get('/tasks/export/filtered', [TaskController::class, 'exportFiltered'])->name('tasks.export-filtered');
     Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
 
     // Pastikan ini ada di dalam group middleware 'auth' atau yang sesuai

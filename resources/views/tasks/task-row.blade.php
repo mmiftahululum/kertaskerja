@@ -121,21 +121,33 @@
     @endif
 </td>
 
-    <td class="px-1 py-1 text-xs text-gray-700 pointer" onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
-        <div x-data="{ expanded: false }">
+    <td class="px-1 py-1 text-xs text-gray-700 pointer" 
+    onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
+    <div x-data="{ expanded: false }">
+        @php
+            $lastComment = $task->comments->sortByDesc('created_at')->first();
+        @endphp
+
+        @if ($lastComment)
             @php
-                $lastComment = $task->comments->sortByDesc('created_at')->first();
+                // Tentukan warna hanya untuk timestamp
+                $daysDiff = $lastComment->created_at->diffInDays(now());
+                $timeColorClass = $daysDiff < 1 ? 'text-green-500' : 'text-yellow-500';
             @endphp
-            @if ($lastComment)
-                <div class="text-xs">
-                    <strong>{{ $lastComment->user->name ?? 'N/A' }}:</strong> {{ Str::limit($lastComment->comment, 50) }}
-                    <span class="text-gray-500">({{ $lastComment->created_at->diffForHumans() }})</span>
-                </div>
-            @else
-                <span class="text-gray-500">Belum ada komentar.</span> <br/>
-            @endif
-        </div>
-    </td>
+
+            <div class="text-xs">
+                <strong>{{ $lastComment->user->name ?? 'N/A' }}:</strong>
+                {{ Str::limit($lastComment->comment, 50) }}
+                <span class="{{ $timeColorClass }}">
+                    ({{ $lastComment->created_at->diffForHumans() }})
+                </span>
+            </div>
+        @else
+            <span class="text-xs text-red-500">Belum ada komentar.</span> <br/>
+        @endif
+    </div>
+</td>
+
  
 </tr>
 

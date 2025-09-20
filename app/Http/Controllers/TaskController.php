@@ -21,7 +21,7 @@ class TaskController extends Controller
 {
 
 // Ambil parameter filter dari request
-    $filterClose = $request->get('filter_close', '0');
+  $filterClose = $request->get('filter_close', '0');
     $operator = $request->get('operator', '');
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
@@ -29,7 +29,7 @@ class TaskController extends Controller
 
     if ($request->has('filter_close') && $request->filter_close == '1') {
         // Tampilkan semua task (parent saja, children akan di-load di view)
-        $tasks = Task::with([
+        $query = Task::with([
             'parent',
             'headStatus',
             'currentStatus', 
@@ -41,12 +41,26 @@ class TaskController extends Controller
             'comments.user'
         ])
         ->whereNull('parent_id')
-        ->orderBy('planned_start', 'ASC')
-        ->paginate(100);
+        ->orderBy('planned_start', 'ASC');
+
+        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
+            if ($operator === '=') {
+                $query->whereIn('current_status_id', $statusIds);
+            } elseif ($operator === '!=') {
+                $query->whereNotIn('current_status_id', $statusIds);
+            }
+        }
+
+        // Terapkan filter search jika ada
+        if (!empty($searchQuery)) {
+            $query->where('title', 'LIKE', '%' . $searchQuery . '%');
+        }
+
+        $tasks = $query->paginate(100);
 
     } else {
         // Ambil semua tasks yang valid (status bukan CLOSE) dalam satu query
-        $allValidTasks = Task::with([
+        $validTasksQuery = Task::with([
             'parent',
             'headStatus',
             'currentStatus',
@@ -59,9 +73,23 @@ class TaskController extends Controller
         ])
         ->whereHas('currentStatus', function ($q) {
             $q->where('status_code', '<>', 'CLOSE');
-        })
-        ->orderBy('planned_start', 'ASC')
-        ->get();
+        });
+
+        // Terapkan filter operator dan status jika ada
+        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
+            if ($operator === '=') {
+                $validTasksQuery->whereIn('current_status_id', $statusIds);
+            } elseif ($operator === '!=') {
+                $validTasksQuery->whereNotIn('current_status_id', $statusIds);
+            }
+        }
+
+        // Terapkan filter search jika ada
+        if (!empty($searchQuery)) {
+            $validTasksQuery->where('title', 'LIKE', '%' . $searchQuery . '%');
+        }
+
+        $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
 
         // Buat tree structure dari flat collection
         $taskTree = $this->buildTaskTree($allValidTasks);
@@ -90,7 +118,12 @@ class TaskController extends Controller
     $employees = Karyawan::select('id', 'nama_karyawan')->get();
 
     return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
-       ->with('filter_close', $request->filter_close ?? null);
+        ->with([
+            'filter_close' => $request->filter_close ?? null,
+            'selected_operator' => $operator,
+            'selected_status_ids' => $statusIds,
+            'search_query' => $searchQuery
+        ]);
 }
 
 /**
@@ -224,7 +257,10 @@ private function buildTaskTree($tasks)
         return redirect()->route('tasks.index')
             ->with('error', 'Tugas tidak ditemukan');
     }
-        $mTasks = Task::all(); // Semua task tersedia untuk dipilih sebagai parent
+
+        $mTasks = Task::with(['currentStatus'])->whereDoesntHave('currentStatus', function ($query) {
+            $query->where('status_code', 'CLOSE');
+        })->get();
         $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
         $employees = Karyawan::select('id', 'nama_karyawan')->get();
 
@@ -430,5 +466,167 @@ private function buildTaskTree($tasks)
 
         return redirect()->route('tasks.trash')
             ->with('success', 'Tugas berhasil dihapus permanen');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+        /**
+     * Method untuk mendapatkan statistik status (opsional untuk dashboard)
+     */
+    public function getStatusStatistics()
+    {
+        $stats = \DB::table('tasks')
+            ->join('child_statuses', 'tasks.current_status_id', '=', 'child_statuses.id')
+            ->whereNull('tasks.deleted_at')
+            ->select(
+                'child_statuses.id',
+                'child_statuses.status_name',
+                'child_statuses.status_code',
+                'child_statuses.status_color',
+                \DB::raw('COUNT(tasks.id) as task_count')
+            )
+            ->groupBy(
+                'child_statuses.id', 
+                'child_statuses.status_name', 
+                'child_statuses.status_code',
+                'child_statuses.status_color'
+            )
+            ->orderBy('child_statuses.status_name')
+            ->get();
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Method untuk export filtered tasks (opsional)
+     */
+    public function exportFiltered(Request $request)
+    {
+        $filterClose = $request->get('filter_close', '0');
+        $operator = $request->get('operator', '');
+        $statusIds = $request->get('status_ids', []);
+        $searchQuery = $request->get('q', '');
+
+        // Gunakan logic yang sama seperti di index() untuk filtering
+        if ($filterClose == '1') {
+            $query = Task::with(['headStatus', 'currentStatus', 'assignments'])
+                ->whereNull('parent_id');
+
+            if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
+                if ($operator === '=') {
+                    $query->whereIn('current_status_id', $statusIds);
+                } elseif ($operator === '!=') {
+                    $query->whereNotIn('current_status_id', $statusIds);
+                }
+            }
+
+            if (!empty($searchQuery)) {
+                $query->where('title', 'LIKE', '%' . $searchQuery . '%');
+            }
+
+            $tasks = $query->orderBy('planned_start', 'ASC')->get();
+        } else {
+            $query = Task::with(['headStatus', 'currentStatus', 'assignments'])
+                ->whereHas('currentStatus', function ($q) {
+                    $q->where('status_code', '<>', 'CLOSE');
+                });
+
+            if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
+                if ($operator === '=') {
+                    $query->whereIn('current_status_id', $statusIds);
+                } elseif ($operator === '!=') {
+                    $query->whereNotIn('current_status_id', $statusIds);
+                }
+            }
+
+            if (!empty($searchQuery)) {
+                $query->where('title', 'LIKE', '%' . $searchQuery . '%');
+            }
+
+            $tasks = $query->orderBy('planned_start', 'ASC')->get();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Export berhasil',
+            'total_tasks' => $tasks->count(),
+            'filters_applied' => [
+                'close_filter' => $filterClose,
+                'operator' => $operator,
+                'status_ids' => $statusIds,
+                'search' => $searchQuery
+            ],
+            'data' => $tasks
+        ]);
+    }
+
+    /**
+     * Method untuk mendapatkan children dengan filter AJAX
+     */
+    public function getChildrenAjax(Request $request, $parentId)
+    {
+        $showClosed = $request->get('show_closed', false);
+        
+        $query = Task::with(['headStatus', 'currentStatus', 'assignments', 'files'])
+            ->where('parent_id', $parentId);
+
+        if (!$showClosed) {
+            $query->whereHas('currentStatus', function ($q) {
+                $q->where('status_code', '<>', 'CLOSE');
+            });
+        }
+
+        $children = $query->orderBy('planned_start', 'ASC')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $children,
+            'count' => $children->count()
+        ]);
+    }
+
+    /**
+     * Method untuk mendapatkan task yang cocok dengan filter tertentu
+     */
+    public function searchTasks(Request $request)
+    {
+        $query = $request->get('q', '');
+        $statusIds = $request->get('status_ids', []);
+        $limit = $request->get('limit', 10);
+
+        $tasksQuery = Task::with(['headStatus', 'currentStatus']);
+
+        if (!empty($query)) {
+            $tasksQuery->where(function ($q) use ($query) {
+                $q->where('title', 'LIKE', '%' . $query . '%')
+                ->orWhere('description', 'LIKE', '%' . $query . '%');
+            });
+        }
+
+        if (!empty($statusIds) && is_array($statusIds)) {
+            $tasksQuery->whereIn('current_status_id', $statusIds);
+        }
+
+        // Default: tidak tampilkan yang CLOSE
+        $tasksQuery->whereHas('currentStatus', function ($q) {
+            $q->where('status_code', '<>', 'CLOSE');
+        });
+
+        $tasks = $tasksQuery->limit($limit)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tasks,
+            'total' => $tasks->count()
+        ]);
     }
 }
