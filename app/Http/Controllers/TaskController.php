@@ -16,67 +16,103 @@ class TaskController extends Controller
      *
      * @return \Illuminate\View\View
      */
-   public function index(Request $request)
-    {
-        $query = Task::with([
+ 
+    public function index(Request $request)
+{
+
+// Ambil parameter filter dari request
+    $filterClose = $request->get('filter_close', '0');
+    $operator = $request->get('operator', '');
+    $statusIds = $request->get('status_ids', []);
+    $searchQuery = $request->get('q', '');
+
+
+    if ($request->has('filter_close') && $request->filter_close == '1') {
+        // Tampilkan semua task (parent saja, children akan di-load di view)
+        $tasks = Task::with([
             'parent',
-            'children',
             'headStatus',
-            'currentStatus',
+            'currentStatus', 
             'assignments',
             'files',
-             // Muat relasi komentar dan urutkan berdasarkan waktu pembuatan terbaru
             'comments' => function ($query) {
-                // Pastikan komentar diurutkan dari yang terbaru
-                 $query->latest()->take(5); // Ambil 5 komentar terbaru
+                $query->latest()->take(20);
             },
             'comments.user'
         ])
-        ->orderBy('planned_start', 'ASC');
+        ->whereNull('parent_id')
+        ->orderBy('planned_start', 'ASC')
+        ->paginate(100);
 
-        // Filter task utama yang currentStatus-nya BUKAN 'CLOSE'
-        $query->whereHas('currentStatus', function ($q) {
-            $q->where('status_code',"<>", 'CLOSE');
-        });
+    } else {
+        // Ambil semua tasks yang valid (status bukan CLOSE) dalam satu query
+        $allValidTasks = Task::with([
+            'parent',
+            'headStatus',
+            'currentStatus',
+            'assignments', 
+            'files',
+            'comments' => function ($query) {
+                $query->latest()->take(20);
+            },
+            'comments.user'
+        ])
+        ->whereHas('currentStatus', function ($q) {
+            $q->where('status_code', '<>', 'CLOSE');
+        })
+        ->orderBy('planned_start', 'ASC')
+        ->get();
 
-        // Filter child tasks yang currentStatus-nya BUKAN 'CLOSE'
-        // Ini akan memastikan child (dan grand-child, dst jika relasi children didefinisikan secara rekursif)
-        // tidak memiliki status 'CLOSE'.
-        $query->whereHas('children', function ($q) {
-            $q->whereHas('currentStatus', function ($q2) {
-                $q2->where('status_code', "<>",'CLOSE');
-            });
-        });
+        // Buat tree structure dari flat collection
+        $taskTree = $this->buildTaskTree($allValidTasks);
         
-        // --- Bagian filter_close yang sudah ada, sesuaikan jika perlu ---
-        if ($request->has('filter_close') && $request->filter_close == '1') {
-            // Jika checkbox "Close" dicentang, kita mungkin ingin menampilkan task CLOSE.
-            // Namun, karena permintaan Anda adalah "BUKAN CLOSE", bagian ini harus disesuaikan.
-            // Saat ini, logika ini akan BENTROK dengan filter di atas.
-            // Jika Anda ingin checkbox ini untuk filter task yang CLOSE saja,
-            // maka hapus atau modifikasi filter whereDoesntHave di atas agar tidak selalu aktif.
-            // Untuk skenario "tidak CLOSE" sebagai default, filter_close mungkin tidak diperlukan,
-            // atau bisa diubah menjadi "tampilkan task CLOSE".
-            // Saya akan mengasumsikan Anda ingin defaultnya TIDAK CLOSE.
-
-            // Contoh: Jika filter_close=1 berarti tampilkan yang close,
-            // maka kita harus menghapus whereDoesntHave di atas, dan pakai whereHas seperti ini:
-            // $query->whereHas('currentStatus', function ($q) {
-            //      $q->where('status_code', 'CLOSE');
-            // });
-            // Tapi karena permintaan Anda adalah "BUKAN CLOSE", maka saya akan biarkan filter whereDoesntHave di atas aktif.
-        }
-        // ----------------------------------------------------------------
-
-        $tasks = $query->paginate(100);
-
-        $childStatuses = ChildStatus::get();
-        $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
-        $employees = Karyawan::select('id', 'nama_karyawan')->get();
-
-        return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
-           ->with('filter_close', $request->filter_close ?? null);
+        // Convert ke paginated result (ambil parent tasks saja untuk pagination)
+        $parentTasks = $taskTree->where('parent_id', null);
+        
+        // Manual pagination
+        $page = $request->get('page', 1);
+        $perPage = 100;
+        $offset = ($page - 1) * $perPage;
+        
+        $paginatedParents = $parentTasks->slice($offset, $perPage)->values();
+        
+        $tasks = new \Illuminate\Pagination\LengthAwarePaginator(
+            $paginatedParents,
+            $parentTasks->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
     }
+
+    $childStatuses = ChildStatus::get();
+    $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
+    $employees = Karyawan::select('id', 'nama_karyawan')->get();
+
+    return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
+       ->with('filter_close', $request->filter_close ?? null);
+}
+
+/**
+ * Build task tree dari flat collection
+ */
+private function buildTaskTree($tasks)
+{
+    // Group tasks by parent_id
+    $groupedTasks = $tasks->groupBy('parent_id');
+    
+    // Set children untuk setiap task
+    $tasks->each(function ($task) use ($groupedTasks) {
+        if (isset($groupedTasks[$task->id])) {
+            $task->setRelation('children', $groupedTasks[$task->id]);
+        } else {
+            $task->setRelation('children', collect());
+        }
+    });
+    
+    return $tasks;
+}
+
     /**
      * Menampilkan detail satu tugas beserta semua relasinya ke view
      *
