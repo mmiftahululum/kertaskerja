@@ -1,4 +1,4 @@
-<tr class="{{ $level > 0 ? 'child-task' : '' }} task-row" data-parentid="{{ $task->parent_id }}" data-childid="{{ $task->id }}" data-task-id="{{ $task->id }}">
+<tr style="background:{{ $task->currentStatus->status_color }}0D;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" data-parentid="{{ $task->parent_id }}" data-childid="{{ $task->id }}" data-task-id="{{ $task->id }}">
     <td>
          <!-- Icon expand/collapse hanya jika ada child -->
         @if($task->children->isNotEmpty())
@@ -11,19 +11,23 @@
         @endif
     </td>
     <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
-          {{ $task->title }}
+           <div style="font-size: {{ 15 - (($level - 1) * 1) }}px;"> <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span> 
+        <a href="{{ route('tasks.view', $task) }}" target="blank" class="text-gray-900 hover:underline font-semibold">
+            {{ $task->title }}
+</a>
+        </div>
         </td>
         <td>
-<button
-        type="button"
-        onclick='openCreateChildModal({{ $task->id }}, {!! json_encode($task->title) !!}, {{ $task->head_status_id }})'
-        class="bg-cyan-100 text-cyan-700 hover:bg-cyan-200 rounded-md px-3 py-1 flex items-center gap-1 shadow-sm transition duration-200"
-        aria-label="Tambah anak tugas"
-    >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-    </button>
+            <button
+                type="button"
+                onclick='openCreateChildModal({{ $task->id }}, {!! json_encode($task->title) !!}, {{ $task->head_status_id }})'
+                class="bg-cyan-100 text-cyan-700 hover:bg-cyan-200 rounded-md px-3 py-1 flex items-center gap-1 shadow-sm transition duration-200"
+                aria-label="Tambah anak tugas"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+            </button>
         </td>
     <td class="px-1 py-1 text-xs text-gray-700">
         <select required
@@ -38,6 +42,20 @@
                 @endif
             @endforeach
         </select>
+    </td>
+        <td class="px-1 py-1 text-xs text-gray-700">
+        <button
+            type="button"
+            class="btn btn-sm btn-outline-info flex items-center gap-1"
+            onclick="showTaskStatusTimeline({{ $task->id }})"
+            title="Lihat Histori Status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V12"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8H12.01"/>
+            </svg>
+            <span class="sr-only">Histori Status</span>
+        </button>
     </td>
 
     <!-- Tanggal Mulai -->
@@ -86,7 +104,7 @@
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
                     <span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
-                        {{ $assignment->nama_karyawan }}
+                        {{ $assignment->nickname }}
                     </span>
                 @endforeach
             </ul>
@@ -121,7 +139,7 @@
     @endif
 </td>
 
-    <td class="px-1 py-1 text-xs text-gray-700 pointer" 
+    <td class="px-1 py-1 text-xs text-gray-700" style="cursor: pointer;" 
     onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
     <div x-data="{ expanded: false }">
         @php

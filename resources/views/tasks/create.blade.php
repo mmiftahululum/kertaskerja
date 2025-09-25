@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-medium text-gray-900">Form Buat Tugas</h3>
@@ -154,6 +154,7 @@
 
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+ @include('layouts.tiny')
 
 <style>
     /* Pastikan control dan dropdown Tom Select ber-background putih */

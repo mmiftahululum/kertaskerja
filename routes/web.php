@@ -54,6 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('child-statuses', ChildStatusController::class);
     Route::resource('tasks', TaskController::class);
 
+    Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
+    Route::get('/tasks/view/{task}', [TaskController::class, 'view'])->name('tasks.view');
+
     // routes/web.php
     Route::get('/tasks/export/filtered', [TaskController::class, 'exportFiltered'])->name('tasks.export-filtered');
     Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');

@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
 
@@ -45,9 +45,14 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nickname</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username Git</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username VPN</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sebagai</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Berakhir Kontrak</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Hari Kontrak</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
@@ -55,11 +60,32 @@
                                 @forelse($karyawans as $k)
                                     <tr>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $k->nama_karyawan }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $k->nickname }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $k->email }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $k->phone_no }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $k->username_git }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700">{{ $k->username_vpn ?? '-' }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700">{{ $k->sebagai ?? '-' }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700">
                                             {{ $k->tanggal_berakhir_kontrak ? $k->tanggal_berakhir_kontrak->format('Y-m-d') : '-' }}
                                         </td>
+                                       <!-- ★ Kolom “Sisa Hari Kontrak” -->
+        <!-- ★ Kolom “Sisa Hari Kontrak” -->
+        <td class="px-4 py-3 text-sm text-center">
+            @php
+                // Hitung selisih (tanggal akhir – hari ini) dengan tanda
+                $sisaHari = \Carbon\Carbon::parse($k->tanggal_berakhir_kontrak)
+                              ->diffInDays(\Carbon\Carbon::today(), false);
+            @endphp
+
+            @if($sisaHari < 0)
+                <span class="text-red-600 font-medium">{{ $sisaHari }}</span>
+            @else
+                <span class="text-green-600 font-medium">{{ $sisaHari }}</span>
+            @endif
+        </td>
+
+
                                         <td class="px-4 py-3 text-sm text-right">
                                             <div class="inline-flex items-center space-x-1">
                                                 <a href="{{ route('karyawans.show', $k) }}" class="text-indigo-600 hover:underline text-sm">Lihat</a>

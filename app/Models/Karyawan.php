@@ -13,11 +13,14 @@ class Karyawan extends Model
 
     protected $fillable = [
         'nama_karyawan',
+        'nickname',
+        'email',
+        'phone_no',
         'username_git',
         'username_vpn',
         'tanggal_berakhir_kontrak',
+        'sebagai',
     ];
-
     protected $casts = [
         'tanggal_berakhir_kontrak' => 'date',
     ];

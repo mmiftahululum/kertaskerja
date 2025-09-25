@@ -70,6 +70,11 @@ class Task extends Model
         return $this->hasMany(TaskComment::class);
     }
 
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(TaskStatusLog::class, 'task_id')->orderBy('created_at', 'asc');
+    }
+
     // Relasi: Karyawan yang diassign
     public function assignments(): BelongsToMany
     {

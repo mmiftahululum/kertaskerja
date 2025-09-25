@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Karyawan;
 use App\Models\ChildStatus;
+use App\Models\TaskStatusLog;
 use App\Models\HeadStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,10 +17,15 @@ class TaskController extends Controller
      *
      * @return \Illuminate\View\View
      */
- 
-    public function index(Request $request)
-{
 
+
+    public function view(Task $task)
+{
+    return view('tasks.view', compact('task'));
+}
+ 
+public function index(Request $request)
+{
 // Ambil parameter filter dari request
   $filterClose = $request->get('filter_close', '0');
     $operator = $request->get('operator', '');
@@ -238,6 +244,13 @@ private function buildTaskTree($tasks)
             }
         }
 
+        
+          TaskStatusLog::create([
+            'task_id'  => $task->id,
+            'child_status_id' => $request->current_status_id,
+            'user_id' => auth()->id()
+        ]);
+
         return redirect()->route('tasks.index')
             ->with('success', 'Tugas berhasil dibuat');
     }
@@ -349,9 +362,14 @@ private function buildTaskTree($tasks)
         $task->current_status_id = $request->current_status_id;
         $task->save();
 
+          TaskStatusLog::create([
+            'task_id'  => $task->id,
+            'child_status_id' => $request->current_status_id,
+            'user_id' => auth()->id()
+        ]);
+
         return response()->json(['message' => 'Status task berhasil diperbarui.', 'task' => $task->fresh()]);
     }
-
 
     /**
      * Mengambil semua status child berdasarkan head_status_id 
@@ -468,11 +486,30 @@ private function buildTaskTree($tasks)
             ->with('success', 'Tugas berhasil dihapus permanen');
     }
 
+    public function getStatusTimeline(Task $task)
+{
+    $timeline = $task->statusLogs()
+        ->with(['changer', 'newStatus']) // load newStatus dan child-nya
+        ->orderBy('created_at', 'asc')
+        ->get()
+        ->map(function ($log) {
+            return [
+                'id' => $log->id,
+                'changer' => $log->changer?->name, // nama user yg ubah
+                'status' => $log->newStatus?->status_name, // status utama
+                'status_color' => $log->newStatus?->status_color, // status utama
+                'created_at' => $log->created_at->format('d M Y H:i'),
+            ];
+        });
 
-
-
-
-
+    return response()->json([
+        'task' => [
+            'id' => $task->id,
+            'title' => $task->title,
+        ],
+        'timeline' => $timeline,
+    ]);
+}
 
 
 

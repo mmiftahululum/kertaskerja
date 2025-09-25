@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
                 <div class="p-4 sm:p-6">
                    <div class="items-center justify-between mb-4">
@@ -117,14 +117,14 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4/12" colspan="3">Judul Task</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12">Status Saat Ini</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2">Status Saat Ini</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan End</th>
                          
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual End</th>
                          
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  w-2/12">Assignment</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link Reference</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/12">Komentar Terakhir</th>
                                 </tr>
@@ -156,7 +156,6 @@
 
     <div id="context-menu" style="display:none; position:absolute; background:white; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:1000; width: 150px;">
         <ul style="list-style:none; margin:0; padding:5px 0;">
-            <li><a href="#" id="context-detail" style="display:block; padding:8px 15px; color:#4f46e5; text-decoration:none;">Detail</a></li>
             <li><a href="#" id="context-edit" style="display:block; padding:8px 15px; color:#fbbf24; text-decoration:none;">Edit</a></li>
             <li><a href="#" id="context-delete" style="display:block; padding:8px 15px; color:#dc2626; text-decoration:none;">Hapus</a></li>
         </ul>
@@ -167,7 +166,16 @@
         <div class="bg-white rounded-lg w-full max-w-lg mx-4 p-6">
             <h3 class="text-lg font-semibold mb-4" id="modal-task-title"></h3>
 
-            <form id="comment-form" method="POST" action="">
+    
+
+            <div class="mt-6">
+                <h4 class="font-medium mb-2">Komentar Terbaru</h4>
+                <div id="comment-list" class="space-y-3 max-h-60 overflow-y-auto">
+                    <p class="text-gray-500 text-sm">Tidak ada komentar.</p>
+                </div>
+            </div>
+
+             <form id="comment-form" class="mt-5" method="POST" action="">
                 @csrf
                 <input type="hidden" name="task_id" id="modal-task-id">
                 <textarea name="comment"
@@ -183,15 +191,35 @@
                             class="px-4 py-2 bg-blue-600 text-white rounded">Kirim</button>
                 </div>
             </form>
+        </div>
+    </div>
 
-            <div class="mt-6">
-                <h4 class="font-medium mb-2">Komentar Terbaru</h4>
-                <div id="comment-list" class="space-y-3 max-h-60 overflow-y-auto">
-                    <p class="text-gray-500 text-sm">Tidak ada komentar.</p>
-                </div>
+    <!-- Task Status Timeline Modal -->
+   <!-- Task Status Timeline Modal -->
+<div id="taskStatusTimelineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative">
+
+      <div class="flex items-center justify-between border-b pb-3">
+    <h2 class="text-lg font-semibold">Status Timeline</h2>
+    <button onclick="closeTaskStatusTimelineModal()" 
+            class="text-gray-500 hover:text-gray-700 text-2xl leading-none">
+        &times;
+    </button>
+</div>
+       
+
+       
+
+        <div id="status-timeline-container" class="mt-4 space-y-4">
+            <div class="flex justify-center py-6">
+                <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
             </div>
         </div>
     </div>
+</div>
 
     {{-- Modal untuk Tambah Child Task --}}
     <div id="createChildTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
@@ -219,7 +247,7 @@
 
                     <div>
                         <label for="child_description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                        <textarea name="description" id="child_description" rows="4"
+                        <textarea name="description" id="description" rows="4"
                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                   placeholder="Deskripsikan sub-task"></textarea>
                     </div>
@@ -341,6 +369,8 @@
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
+ @include('layouts.tiny')
+
 <style>
     .ts-control,
     .ts-control .item,
@@ -386,12 +416,96 @@
 
 </style>
 
+<style>
+    /* Styling untuk Timeline */
+.timeline {
+    position: relative;
+    padding: 0;
+    list-style: none;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e0e0e0;
+    left: 20px; /* Posisi garis vertikal */
+    margin-left: -1.5px;
+}
+
+.timeline-item {
+    margin-bottom: 20px;
+    position: relative;
+    padding-left: 60px; /* Jarak untuk ikon/titik */
+    border-bottom: 1px dotted #eee; /* Garis pemisah antar item */
+    padding-bottom: 10px;
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.timeline-icon {
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 5px; /* Posisi ikon relatif terhadap garis */
+    background-color: #0d6efd; /* Warna default icon (biru) */
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.timeline-icon.status-completed {
+    background-color: #28a745; /* Hijau untuk selesai */
+}
+
+.timeline-icon.status-in-progress {
+    background-color: #ffc107; /* Kuning untuk dalam proses */
+}
+
+/* Anda bisa menambahkan lebih banyak kelas sesuai status yang ada */
+
+.timeline-panel {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    position: relative;
+}
+
+.timeline-heading {
+    margin-top: 0;
+    font-size: 1.1em;
+}
+
+.timeline-body p {
+    margin-bottom: 5px;
+}
+
+.timeline-date {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 5px;
+}
+</style>
+
 
 <script>
+
+    
     // Script untuk Select2 status task
     // Script untuk Filter - Tambahkan setelah script Select2 yang sudah ada
 $(document).ready(function () {
 
+     
      $('.statustask').select2({
             templateResult: function (data) {
                 if (!data.id) return data.text;
@@ -602,6 +716,49 @@ $(document).ready(function () {
             });
     };
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    var taskTimelineModal = document.getElementById('taskStatusTimelineModal');
+    if (taskTimelineModal) {
+        console.log('Modal found');
+        taskTimelineModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            var button = event.relatedTarget;
+            // Extract info from data-bs-task-id attributes
+            var taskId = button.getAttribute('data-bs-task-id');
+
+            // Sekarang Anda memiliki taskId, Anda bisa menggunakannya untuk:
+            // 1. Membuat permintaan AJAX ke endpoint API Anda
+            //    untuk mendapatkan data timeline status task tersebut.
+            //    Contoh: /api/tasks/{taskId}/timeline
+            // 2. Mengisi konten modal dengan data yang diterima.
+
+            var modalTitle = taskTimelineModal.querySelector('.modal-title');
+            var modalBody = taskTimelineModal.querySelector('.modal-body');
+
+            modalTitle.textContent = 'Histori Status Tugas #' + taskId;
+            modalBody.innerHTML = '<p>Memuat timeline untuk Tugas ID: ' + taskId + '...</p>'; // Teks loading
+
+            // Contoh AJAX dengan Fetch API (asumsi Anda punya endpoint API untuk timeline)
+            fetch('/api/tasks/' + taskId + '/timeline') // Ganti dengan endpoint API Anda
+                .then(response => response.json())
+                .then(data => {
+                    // Pastikan Anda sudah mengatur modalBody untuk menampilkan timeline dengan rapi
+                    let timelineHtml = '<ul>';
+                    data.forEach(log => {
+                        timelineHtml += `<li><strong>${log.status_name}</strong> - Oleh: ${log.user_name} pada: ${new Date(log.changed_at).toLocaleString()}</li>`;
+                    });
+                    timelineHtml += '</ul>';
+                    modalBody.innerHTML = timelineHtml;
+                })
+                .catch(error => {
+                    console.error('Error fetching task timeline:', error);
+                    modalBody.innerHTML = '<p class="text-danger">Gagal memuat timeline status.</p>';
+                });
+        });
+    }
+});
+
 
     // Script untuk modal child task
     function openCreateChildModal(parentId, parentTitle, heatstatusid) {
@@ -849,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event klik kanan di baris tabel dengan class 'task-row'
     document.querySelectorAll('.task-row').forEach(row => {
+        
         row.addEventListener('contextmenu', function(e) {
             e.preventDefault();
             
@@ -866,13 +1024,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!contextMenu.contains(e.target)) {
             hideContextMenu();
         }
-    });
-
-    // Klik menu "Detail"
-    document.getElementById('context-detail').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (!selectedTaskId) return;
-        window.location.href = `/tasks/${selectedTaskId}`;
     });
 
     // Klik menu "Edit"
@@ -1072,4 +1223,103 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+</script>
+<script>
+function showTaskStatusTimeline(taskId) {
+    const modal = document.getElementById("taskStatusTimelineModal");
+    const container = document.getElementById("status-timeline-container");
+
+    // isi loader
+    container.innerHTML = `
+        <div class="flex justify-center py-6">
+            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+        </div>
+    `;
+
+    // buka modal
+    modal.classList.remove("hidden");
+
+    // ambil data status timeline
+    fetch(`/tasks/${taskId}/status-timeline`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.timeline || data.timeline.length === 0) {
+                container.innerHTML = `<p class="text-gray-500">Belum ada log status</p>`;
+                return;
+            }
+
+            // sort ascending biar terbaru di bawah
+            data.timeline.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+           let html = `
+  <div class="relative ml-6">
+    <!-- Garis dasar abu -->
+    <div class="absolute left-0 top-0 h-full border-l-2 border-gray-300"></div>
+    <!-- Garis progress biru (sampai item terakhir) -->
+    <div class="absolute left-0 top-0 h-full border-l-2 border-blue-500 animate-[grow_1s_ease-out_forwards]"></div>
+    <div class="space-y-8">
+`;
+
+data.timeline.forEach((item, index) => {
+    const next = data.timeline[index + 1];
+    let duration = '-';
+
+    if (next) {
+        const start = new Date(item.created_at);
+        const end   = new Date(next.created_at);
+        if (!isNaN(start) && !isNaN(end)) {
+            const diff  = Math.floor((end - start) / 1000);
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            duration = (h ? h + ' jam ' : '') + (m ? m + ' menit' : '');
+        }
+    } else {
+        const start = new Date(item.created_at);
+        const now   = new Date();
+        if (!isNaN(start)) {
+            const diff  = Math.floor((now - start) / 1000);
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            duration = (h ? h + ' jam ' : '') + (m ? m + ' menit' : '');
+        }
+    }
+
+    const isLast = index === data.timeline.length - 1;
+    const circleClass = isLast
+        ? "w-5 h-5  border-2 border-white ring-4 ring-green-300"
+        : "w-4 h-4  border-2 border-white";
+
+    html += `
+      <div class="relative pl-6">
+        <!-- Titik status -->
+        <span class="absolute -left-3 top-1 ${circleClass} rounded-full" style="background-color:${item.status_color};"></span>
+
+        <!-- Isi status -->
+        <div class="flex justify-between items-center">
+          <p class="font-semibold text-gray-800">${item.status}</p>
+          <span class="text-sm text-gray-500">${item.created_at}</span>
+        </div>
+        <p class="text-sm text-gray-600">by ${item.changer}</p>
+        <p class="text-xs text-gray-400">Durasi: ${duration}</p>
+      </div>
+    `;
+});
+
+html += `</div></div>`;
+
+
+            container.innerHTML = html;
+        })
+        .catch(err => {
+            container.innerHTML = `<p class="text-red-500">Gagal memuat timeline</p>`;
+            console.error(err);
+        });
+}
+
+function closeTaskStatusTimelineModal() {
+    document.getElementById("taskStatusTimelineModal").classList.add("hidden");
+}
 </script>

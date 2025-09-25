@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
                 <form action="{{ route('tasks.update', $task->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
@@ -177,6 +177,9 @@
 <!-- Styles and Scripts -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+ @include('layouts.tiny')
+
 
 <style>
     .ts-control,
