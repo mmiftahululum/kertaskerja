@@ -24,6 +24,15 @@
                 <span class="text-sm">Close</span>
             </label>
 
+             <!-- Checkbox Filter Close -->
+            <label class="border rounded-md px-2 py-1 flex items-center gap-1">
+                <input class="rounded" type="checkbox" name="filter_mytask" value="1" 
+                       {{ request('filter_mytask') == '1' ? 'checked' : '' }} 
+                       onchange="document.getElementById('filterForm').submit();">
+                <span class="text-sm">My Task</span>
+            </label>
+
+
             <!-- Search Input -->
             <input type="search" name="q" value="{{ request('q') }}"
                    placeholder="Cari judul task..."

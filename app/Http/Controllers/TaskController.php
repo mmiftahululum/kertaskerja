@@ -9,6 +9,8 @@ use App\Models\TaskStatusLog;
 use App\Models\HeadStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;          // <-- ditambah
+use Illuminate\Support\Collection;   
 
 class TaskController extends Controller
 {
@@ -28,6 +30,7 @@ public function index(Request $request)
 {
 // Ambil parameter filter dari request
   $filterClose = $request->get('filter_close', '0');
+  $filterMyTask  = $request->get('filter_mytask', '0');
     $operator = $request->get('operator', '');
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
@@ -95,6 +98,41 @@ public function index(Request $request)
             $validTasksQuery->where('title', 'LIKE', '%' . $searchQuery . '%');
         }
 
+        if($filterMyTask == "1"){
+             // --------------------------------------------------------------
+            // 4️⃣ **Filter tambahan untuk assignment user**
+            // --------------------------------------------------------------                   
+            $userId = Auth::id();                     // id karyawan yang login
+            $userEmail = Auth::user()->email ?? '';   // (bila diperlukan)
+
+            // a) Task yang langsung di‑assign ke user
+            $assignedTaskIds = Task::whereHas('assignments', function ($q) use ($userEmail) {
+                $q->where('email', $userEmail);
+            })->pluck('id')->toArray();
+
+            // b) Dapatkan semua ancestor (parent‑parent‑…) dari task yang di‑assign
+            $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
+
+            // c) Dapatkan semua descendant (children‑children‑…) dari task yang di‑assign
+            $descendantIds = $this->collectDescendantIds($assignedTaskIds);
+
+            // d) Gabungkan semua ID yang relevan
+            $relevantTaskIds = array_unique(array_merge(
+                $assignedTaskIds,
+                $ancestorIds,
+                $descendantIds
+            ));
+
+            // e) Terapkan filter ke query utama (hanya ambil task yang termasuk dalam $relevantTaskIds)
+            if (!empty($relevantTaskIds)) {
+                $validTasksQuery->whereIn('id', $relevantTaskIds);
+            } else {
+                // Jika tidak ada task yang relevan, kembalikan collection kosong
+                $validTasksQuery->whereRaw('0 = 1');
+            }
+        }
+       
+
         $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
 
         // Buat tree structure dari flat collection
@@ -126,11 +164,60 @@ public function index(Request $request)
     return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
         ->with([
             'filter_close' => $request->filter_close ?? null,
+            'filter_mytask' => $request->filter_mytask ?? null,
             'selected_operator' => $operator,
             'selected_status_ids' => $statusIds,
             'search_query' => $searchQuery
         ]);
 }
+
+  /* ------------------------------------------------------------------
+     *  Helper: mengumpulkan semua ancestor (parent‑parent‑…) dari
+     *          sekumpulan task ID.
+     * ------------------------------------------------------------------ */
+    private function collectAncestorIds(array $taskIds): array
+    {
+        $ancestors = [];
+
+        foreach ($taskIds as $id) {
+            $task = Task::find($id);
+            while ($task && $task->parent_id) {
+                $parentId = $task->parent_id;
+                if (!in_array($parentId, $ancestors)) {
+                    $ancestors[] = $parentId;
+                }
+                $task = Task::find($parentId); // naik satu level lagi
+            }
+        }
+
+        return $ancestors;
+    }
+
+    /* ------------------------------------------------------------------
+     *  Helper: mengumpulkan semua descendant (children‑children‑…) dari
+     *          sekumpulan task ID (rekursif).
+     * ------------------------------------------------------------------ */
+    private function collectDescendantIds(array $taskIds): array
+    {
+        $descendants = [];
+
+        $stack = $taskIds; // gunakan stack untuk iterasi DFS
+
+        while (!empty($stack)) {
+            $currentId = array_pop($stack);
+            $children  = Task::where('parent_id', $currentId)->pluck('id')->toArray();
+
+            foreach ($children as $childId) {
+                if (!in_array($childId, $descendants)) {
+                    $descendants[] = $childId;
+                    $stack[] = $childId; // eksplorasi deeper level
+                }
+            }
+        }
+
+        return $descendants;
+    }
+
 
 /**
  * Build task tree dari flat collection
