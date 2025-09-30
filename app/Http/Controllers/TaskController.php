@@ -139,10 +139,11 @@ public function index(Request $request)
     $employees = Karyawan::select('id', 'nama_karyawan', 'nickname')->get();
     $currentKaryawan = Karyawan::where('email', $userEmail)->first();
     $currentKaryawanId = $currentKaryawan ? $currentKaryawan->id : null; 
+    $bookmarks = Auth::user()->taskFilterBookmarks()->orderBy('name')->get();
 
     return view('tasks.index', compact(
             'employees', 'tasks', 'childStatuses', 'headStatuses', 'currentKaryawanId',
-            'searchableTasks'
+            'searchableTasks','bookmarks'
         ))
         ->with([
             'filter_close' => $request->filter_close ?? null,
@@ -320,7 +321,10 @@ private function buildTaskTree($tasks)
             'user_id' => auth()->id()
         ]);
 
-        return redirect()->route('tasks.index')
+        // Kode BARU
+        $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
+        return redirect($redirectUrl)
             ->with('success', 'Tugas berhasil dibuat');
     }
 
@@ -425,8 +429,12 @@ private function buildTaskTree($tasks)
         'user_id' => auth()->id()
     ]);
 
-    return redirect()->route('tasks.index')
-        ->with('success', 'Tugas berhasil dibuat');
+    // Ganti baris return yang lama dengan ini:
+    $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
+    return redirect($redirectUrl)
+        ->with('success', 'Tugas berhasil diperbarui');
+
     }
 
     public function updateStatus(Request $request, Task $task)
@@ -500,16 +508,18 @@ private function buildTaskTree($tasks)
     {
         $task = Task::find($id);
 
+         $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
         if (!$task) {
-            return redirect()->route('tasks.index')
-                ->with('error', 'Tugas tidak ditemukan');
+            return redirect($redirectUrl)
+            ->with('error', 'Tugas tidak ditemukan');
         }
 
         // Hapus menggunakan soft delete
         $task->delete();
 
-        return redirect()->route('tasks.index')
-            ->with('success', 'Tugas berhasil dihapus (dipindahkan ke trash)');
+        return redirect($redirectUrl)
+            ->with('success', 'Tugas berhasil dihapus');
     }
 
     /**

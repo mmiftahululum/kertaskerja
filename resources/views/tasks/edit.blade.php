@@ -13,6 +13,8 @@
                     @method('PUT')
 
                     <input type="hidden" name="parent_id" id="parent_id" value="{{ old('parent_id', $task->parent_id) }}">
+                     {{-- (BARU) Tambahkan input ini untuk menyimpan parameter filter --}}
+                    <input type="hidden" name="_redirect_params" value="{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}">
 
                     <!-- Parent Task -->
                     <div class="mb-4">
@@ -156,8 +158,9 @@
                     </div>
 
                     <div class="flex items-center justify-end gap-3 mt-6">
-                        <a href="{{ route('tasks.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
-                            Batal
+                        {{-- Ganti link "Batal" yang lama dengan ini --}}
+                        <a href="{{ route('tasks.index') . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">
+                            {{ __('Batal') }}
                         </a>
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             Simpan Perubahan

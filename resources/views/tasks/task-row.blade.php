@@ -12,10 +12,10 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
  data-task-id="{{ $task->id }}">
 
 
-    <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
+    <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 1 }}px">
            <!-- Icon expand/collapse hanya jika ada child -->
       
-          <div class="flex items-center gap-2">
+          <div class="flex items-center">
 
     <div class="flex-shrink-0 w-8 text-center pt-2">
         @if($task->children->isNotEmpty())
@@ -123,9 +123,9 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
         @if($task->assignments && $task->assignments->count())
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
-                    <span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
+                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}"><span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
                         {{ $assignment->nickname }}
-                    </span>
+                    </span></a>
                 @endforeach
             </ul>
         @else

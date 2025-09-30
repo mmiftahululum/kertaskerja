@@ -64,6 +64,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
     Route::get('/tasks/view/{task}', [TaskController::class, 'view'])->name('tasks.view');
 
+    Route::post('/tasks/bookmarks', [App\Http\Controllers\TaskFilterBookmarkController::class, 'store'])->name('tasks.bookmarks.store');
+    Route::delete('/tasks/bookmarks/{bookmark}', [App\Http\Controllers\TaskFilterBookmarkController::class, 'destroy'])->name('tasks.bookmarks.destroy');
+
     // routes/web.php
     Route::get('/tasks/export/filtered', [TaskController::class, 'exportFiltered'])->name('tasks.export-filtered');
     Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');

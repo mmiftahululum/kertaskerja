@@ -10,7 +10,68 @@
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
                 <div class="p-4 sm:p-6">
                    <div class="items-center justify-between mb-4">
-    <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
+    <div class="text-lg font-medium text-gray-900"> 
+        <a target="blank" href="https://outlook.office.com/mail/">Email Calender</a> | 
+        <a target="blank" href="https://servicedesk.sig.id/HomePage.do" >Service Desk</a>
+    </div>
+
+    <div class="flex flex-wrap">
+<div id="saveBookmarkModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-md mx-4 p-6">
+            <h3 class="text-lg font-semibold mb-4">Simpan Filter sebagai Bookmark</h3>
+            <form action="{{ route('tasks.bookmarks.store') }}" method="POST">
+                @csrf
+
+                {{-- Hidden input untuk menyimpan semua parameter filter saat ini --}}
+                @foreach(request()->query() as $key => $value)
+                    @if(is_array($value))
+                        @foreach($value as $sub_value)
+                            <input type="hidden" name="filters[{{ $key }}][]" value="{{ $sub_value }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="filters[{{ $key }}]" value="{{ $value }}">
+                    @endif
+                @endforeach
+
+                <div>
+                    <label for="bookmark_name" class="block text-sm font-medium text-gray-700">Nama Bookmark</label>
+                    <input type="text" name="bookmark_name" id="bookmark_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Contoh: Bug Prioritas Tinggi">
+                </div>
+
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" onclick="closeSaveBookmarkModal()" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center gap-4 pt-5">
+        <button onclick="openSaveBookmarkModal()" class="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+            Simpan Filter
+        </button>
+
+       <div class="flex items-center gap-2">
+        @foreach($bookmarks as $bookmark)
+            <div class="flex items-center bg-gray-100 rounded-full">
+                <a href="{{ route('tasks.index', $bookmark->filters) }}" class="block text-sm text-gray-800 pl-3 pr-2 py-1 hover:text-black">
+                    {{ $bookmark->name }}
+                </a>
+                
+                <form action="{{ route('tasks.bookmarks.destroy', $bookmark) }}" method="POST" onsubmit="return confirm('Anda yakin ingin menghapus bookmark \'{{ $bookmark->name }}\'?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-500 hover:text-red-700 font-bold pr-3 pl-1" aria-label="Hapus bookmark {{ $bookmark->name }}">
+                        &times;
+                    </button>
+                </form>
+            </div>
+        @endforeach
+    </div>
+    </div>
+
+    </div>
     
     <div class="flex flex-wrap items-center gap-4 mt-4">
         <!-- Form Filter -->
@@ -199,6 +260,8 @@
              <form id="comment-form" class="mt-5" method="POST" action="">
                 @csrf
                 <input type="hidden" name="task_id" id="modal-task-id">
+                 {{-- (BARU) Tambahkan input ini juga --}}
+                <input type="hidden" name="_redirect_params" id="commentRedirectParams">
                 <textarea name="comment"
                           class="w-full border rounded p-2 mb-3"
                           rows="3"
@@ -258,6 +321,9 @@
             <form action="{{ route('tasks.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <input type="hidden" name="parent_id" id="parentTaskId">
+
+                {{-- (BARU) Tambahkan input ini untuk menyimpan parameter filter --}}
+                <input type="hidden" name="_redirect_params" id="childRedirectParams">
 
                 <div>
                     <label for="child_title" class="block text-sm font-medium text-gray-700 mb-1">Judul Sub-Task</label>
@@ -345,6 +411,7 @@
 <form id="delete-task-form" method="POST" style="display: none;">
     @csrf
     @method('DELETE')
+     <input type="hidden" name="_redirect_params" id="deleteRedirectParams">
 </form>
 
 </x-app-layout>
@@ -486,6 +553,21 @@
 
 
 <script>
+
+    // (BARU) Script untuk Modal Bookmark
+function openSaveBookmarkModal() {
+    // Cek apakah ada filter aktif, jika tidak jangan buka modal
+    const queryString = window.location.search;
+    if (!queryString) {
+        alert('Tidak ada filter aktif untuk disimpan.');
+        return;
+    }
+    document.getElementById('saveBookmarkModal').classList.remove('hidden');
+}
+
+function closeSaveBookmarkModal() {
+    document.getElementById('saveBookmarkModal').classList.add('hidden');
+}
 
     
     // Script untuk Select2 status task
@@ -764,6 +846,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function openCreateChildModal(parentId, parentTitle, heatstatusid) {
         document.getElementById('parentTaskId').value = parentId;
         document.getElementById('parentTaskTitle').innerText = parentTitle;
+         // (BARU) Ambil query string dari URL dan masukkan ke input
+    document.getElementById('childRedirectParams').value = window.location.search;
         const statusSelect = document.getElementById('head_status_id');
         statusSelect.value = heatstatusid;
         loadChildStatuses(heatstatusid, null);
@@ -850,6 +934,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function openCommentModal(taskId, taskTitle) {
         document.getElementById('modal-task-title').textContent = 'Komentar untuk: ' + taskTitle;
         document.getElementById('modal-task-id').value = taskId;
+
+         // (BARU) Ambil query string dari URL dan masukkan ke input
+        document.getElementById('commentRedirectParams').value = window.location.search;
+
 
         const form = document.getElementById('comment-form');
         form.action = `/tasks/${taskId}/comments`;
@@ -1018,8 +1106,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const taskId = row.getAttribute('data-task-id');
                 const isAssignedToMe = row.getAttribute('data-is-assigned-to-me') === 'true';
 
-                // 1. Atur link untuk tombol Edit
-                contextEdit.href = editUrl;
+                 const redirectParams = window.location.search;
+
+                // 1. Atur link untuk tombol Edit dengan parameter filter
+                contextEdit.href = editUrl + redirectParams;
                 
                 // 2. Logika untuk tombol Timesheet (tampilkan/sembunyikan)
                 if (isAssignedToMe) {
@@ -1046,6 +1136,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Gunakan URL yang sudah disimpan
             if (activeDeleteUrl && confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+
+                  // (DIUBAH) Set parameter filter ke input tersembunyi
+            document.getElementById('deleteRedirectParams').value = window.location.search;
+
+
                 deleteTaskForm.action = activeDeleteUrl;
                 deleteTaskForm.submit();
             }
