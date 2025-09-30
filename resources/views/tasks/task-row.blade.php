@@ -19,12 +19,12 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
 
     <div class="flex-shrink-0 w-8 text-center pt-2">
         @if($task->children->isNotEmpty())
-            <button class="toggle-child" data-open="true" data-parentid="{{ $task->parent_id }}" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
-                <svg class="w-5 h-5 text-gray-600 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-            </button>
+             <button class="toggle-child" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
+        {{-- (DIUBAH) Ikon panah ke kanan dengan class untuk rotasi --}}
+        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
+    </button>
         @endif
     </div>
 

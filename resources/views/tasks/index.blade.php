@@ -13,7 +13,8 @@
     <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
     
     <div class="flex flex-wrap items-center gap-4 mt-4">
-        <form method="GET" action="{{ route('tasks.index') }}" id="filterFormTaskChoose" class="flex flex-wrap items-center gap-2">
+        <!-- Form Filter -->
+        <form method="GET" action="{{ route('tasks.index') }}" id="filterForm" class="flex flex-wrap items-center gap-2">
 
         <div style="width: 300px;">
             <select name="search_ids[]" id="taskSearchSelect" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" multiple>
@@ -27,10 +28,7 @@
             </select>
         </div>
 
-    </form>
-        <!-- Form Filter -->
-        <form method="GET" action="{{ route('tasks.index') }}" id="filterForm" class="flex flex-wrap items-center gap-2">
-            
+    
             <!-- Checkbox Filter Close -->
             <label class="border rounded-md px-2 py-1 flex items-center gap-1">
                 <input class="rounded" type="checkbox" name="filter_close" value="1" 
@@ -505,7 +503,7 @@ $(document).ready(function () {
     // ==========================================================
     $('#taskSearchSelect').on('change', function() {
         // Langsung submit form filter
-        $('#filterFormTaskChoose').submit();
+        $('#filterForm').submit();
     });
      
      $('.statustask').select2({
@@ -1070,43 +1068,28 @@ document.addEventListener('DOMContentLoaded', function () {
     const toggleButtons = document.querySelectorAll('.toggle-child');
 
     toggleButtons.forEach(button => {
-        button.addEventListener('click', function () {
+       button.addEventListener('click', function () {
             const taskId = this.getAttribute('data-id');
-            const isOpen = this.getAttribute('data-open') === 'true';
-
-             const eyeOpen = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        `;
-
-        const eyeClosed = `
-           <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" />
-</svg>
-        `;
-
-            // Toggle status tombol
             const icon = this.querySelector('svg');
-            if (isOpen) {
-                this.setAttribute('data-open', 'false');
-                icon.innerHTML = eyeClosed;
-            } else {
-                this.setAttribute('data-open', 'true');
-                icon.innerHTML = eyeOpen;
-            }
+            const childRows = document.querySelectorAll(`.task-row[data-parentid="${taskId}"]`);
 
-            // Ambil semua row anak yang terkait dengan taskId (level 1 ke bawah)
-            const allChildRows = document.querySelectorAll(`.task-row[data-parentid="${taskId}"]`);
+            // (DIUBAH) Toggle class 'rotate-90' untuk memutar ikon
+            icon.classList.toggle('rotate-90');
 
-            if (isOpen) {
-                // Sembunyikan semua anak (termasuk anak dari anak)
-                hideAllChildrenRecursively(allChildRows);
-            } else {
-                // Tampilkan semua anak (terus ke bawah)
-                showAllChildrenRecursively(allChildRows);
-            }
+            // Toggle class 'hidden' untuk menampilkan/menyembunyikan baris anak
+            childRows.forEach(row => {
+                row.classList.toggle('hidden');
+                // Jika kita menutup parent, pastikan semua cucu juga ikut tertutup
+                if (row.classList.contains('hidden')) {
+                    const grandChildRows = document.querySelectorAll(`.task-row[data-parentid="${row.dataset.taskId}"]`);
+                    grandChildRows.forEach(gcRow => gcRow.classList.add('hidden'));
+                    // Reset juga ikon panah di level cucu
+                    const childToggleButton = row.querySelector('.toggle-child svg');
+                    if(childToggleButton) {
+                        childToggleButton.classList.remove('rotate-90');
+                    }
+                }
+            });
         });
     });
 
