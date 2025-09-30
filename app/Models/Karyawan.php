@@ -24,4 +24,9 @@ class Karyawan extends Model
     protected $casts = [
         'tanggal_berakhir_kontrak' => 'date',
     ];
+
+    public function kontrakLogs()
+    {
+        return $this->hasMany(KontrakLog::class)->orderBy('tanggal_mulai', 'desc');
+    }
 }

@@ -1,5 +1,17 @@
-<tr style="background:{{ $task->currentStatus->status_color }}0D;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" data-parentid="{{ $task->parent_id }}" data-childid="{{ $task->id }}" data-task-id="{{ $task->id }}">
-    <td>
+
+@php
+    $isAssignedToMe = $task->assignments->contains('id', $currentKaryawanId);
+@endphp
+
+<tr style="background:{{ $task->currentStatus->status_color }}0D;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" 
+data-edit-url="{{ route('tasks.edit', $task) }}"
+data-delete-url="{{ route('tasks.destroy', $task) }}"
+ data-is-assigned-to-me="{{ $isAssignedToMe ? 'true' : 'false' }}" 
+ data-parentid="{{ $task->parent_id }}" 
+ data-childid="{{ $task->id }}" 
+ data-task-id="{{ $task->id }}">
+
+<td>
          <!-- Icon expand/collapse hanya jika ada child -->
         @if($task->children->isNotEmpty())
         <button class="toggle-child"  data-open="true" data-parentid="{{ $task->parent_id }}" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
@@ -11,7 +23,7 @@
         @endif
     </td>
     <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
-           <div style="font-size: {{ 15 - (($level - 1) * 1) }}px;"> <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span> 
+           <div style="font-size: 14px;"> <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span> 
         <a href="{{ route('tasks.view', $task) }}" target="blank" class="text-gray-900 hover:underline font-semibold">
             {{ $task->title }}
 </a>

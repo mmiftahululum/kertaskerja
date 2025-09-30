@@ -48,7 +48,7 @@
                                   placeholder="Deskripsikan tugas">{{ old('description', $task->description) }}</textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-4 gap-1">
                         <div>
                             <label for="planned_start" class="block text-sm font-medium text-gray-700">Plan Mulai</label>
                             <input type="date" name="planned_start" id="planned_start" value="{{ old('planned_start', optional($task->planned_start)->format('Y-m-d')) }}"
@@ -59,10 +59,7 @@
                             <input type="date" name="planned_end" id="planned_end" value="{{ old('planned_end', optional($task->planned_end)->format('Y-m-d')) }}"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
+                         <div>
                             <label for="actual_start" class="block text-sm font-medium text-gray-700">Real Mulai</label>
                             <input type="date" name="actual_start" id="actual_start" value="{{ old('actual_start', optional($task->actual_start)->format('Y-m-d')) }}"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -74,6 +71,7 @@
                         </div>
                     </div>
 
+               <div class="grid grid-cols-2 gap-1">
                     <div>
                         <label for="head_status_id" class="block text-sm font-medium text-gray-700">Head Status</label>
                         <select name="head_status_id" id="head_status_id" required
@@ -94,7 +92,7 @@
                             <option value="">Memuat...</option>
                         </select>
                     </div>
-
+</div>
                   <div>
     <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
     <select name="assignments[]" id="assignments" multiple

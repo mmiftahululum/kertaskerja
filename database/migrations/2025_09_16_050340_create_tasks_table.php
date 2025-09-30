@@ -25,8 +25,8 @@ return new class extends Migration
             $table->integer('progress_percent')->default(0); // Progress dalam persen (0-100)
 
             // Relasi
-            $table->foreign('head_status_id')->references('id')->on('head_statuses')->onDelete('set null');
-            $table->foreign('current_status_id')->references('id')->on('child_statuses')->onDelete('set null');
+            $table->foreign('head_status_id')->references('id')->on('head_statuses');
+            $table->foreign('current_status_id')->references('id')->on('child_statuses');
            
             $table->timestamps();
         });

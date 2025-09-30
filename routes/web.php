@@ -7,6 +7,7 @@ use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\MasterAppController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +31,12 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
+    Route::get('/timesheets', [TimesheetController::class, 'index'])->name('timesheets.index');
+    Route::get('/my-timesheet', [TimesheetController::class, 'myTimesheet'])->name('timesheets.mine');
+    Route::get('/timesheets/create', [TimesheetController::class, 'create'])->name('timesheets.create');
+    Route::post('/timesheets', [TimesheetController::class, 'store'])->name('timesheets.store');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

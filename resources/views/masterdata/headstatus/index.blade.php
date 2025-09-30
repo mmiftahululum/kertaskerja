@@ -80,7 +80,9 @@
                                                                 @foreach($head->childStatuses as $ci => $child)
                                                                     <tr>
                                                                         <td class="px-2 py-2 align-top">{{ $ci + 1 }}</td>
-                                                                       <td class="px-2 py-2 align-top">{{ $child->status_name ?? $child->status_name ?? '-' }}</td>
+                                                                       <td class="px-2 py-2 align-top">
+                                                                       <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $child->status_color }};  margin-right: 8px; vertical-align: middle;"></span> 
+                                                                       {{ $child->status_name ?? $child->status_name ?? '-' }}</td>
                                                                         <td class="px-2 py-2 align-top">{{ $child->status_code ?? $child->status_code ?? '-' }}</td>
                                                                         <td class="px-2 py-2 text-right align-top">
                                                                             <a href="{{ route('child-statuses.edit', $child) }}" class="inline-flex items-center px-2 py-1 border border-yellow-300 text-yellow-700 text-xs rounded hover:bg-yellow-50 mr-1">Edit</a>

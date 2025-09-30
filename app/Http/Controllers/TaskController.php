@@ -21,7 +21,7 @@ class TaskController extends Controller
      */
 
 
-    public function view(Task $task)
+public function view(Task $task)
 {
     return view('tasks.view', compact('task'));
 }
@@ -35,39 +35,10 @@ public function index(Request $request)
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
 
-
-    if ($request->has('filter_close') && $request->filter_close == '1') {
-        // Tampilkan semua task (parent saja, children akan di-load di view)
-        $query = Task::with([
-            'parent',
-            'headStatus',
-            'currentStatus', 
-            'assignments',
-            'files',
-            'comments' => function ($query) {
-                $query->latest()->take(20);
-            },
-            'comments.user'
-        ])
-        ->whereNull('parent_id')
-        ->orderBy('planned_start', 'ASC');
-
-        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
-            if ($operator === '=') {
-                $query->whereIn('current_status_id', $statusIds);
-            } elseif ($operator === '!=') {
-                $query->whereNotIn('current_status_id', $statusIds);
-            }
-        }
-
-        // Terapkan filter search jika ada
-        if (!empty($searchQuery)) {
-            $query->where('title', 'LIKE', '%' . $searchQuery . '%');
-        }
-
-        $tasks = $query->paginate(100);
-
-    } else {
+        $userId = Auth::id();                     // id karyawan yang login
+            $userEmail = Auth::user()->email ?? '';   // (bila diperlukan)
+    
+       
         // Ambil semua tasks yang valid (status bukan CLOSE) dalam satu query
         $validTasksQuery = Task::with([
             'parent',
@@ -79,10 +50,13 @@ public function index(Request $request)
                 $query->latest()->take(20);
             },
             'comments.user'
-        ])
-        ->whereHas('currentStatus', function ($q) {
-            $q->where('status_code', '<>', 'CLOSE');
-        });
+        ]);
+
+        if (!$request->has('filter_close') && !$request->filter_close == '1') {
+            $validTasksQuery = $validTasksQuery->whereHas('currentStatus', function ($q) {
+                $q->where('status_code', '<>', 'CLOSE');
+            });
+        }
 
         // Terapkan filter operator dan status jika ada
         if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
@@ -95,15 +69,15 @@ public function index(Request $request)
 
         // Terapkan filter search jika ada
         if (!empty($searchQuery)) {
-            $validTasksQuery->where('title', 'LIKE', '%' . $searchQuery . '%');
+            $validTasksQuery->where('title','like','%'.$searchQuery.'%');
         }
+
 
         if($filterMyTask == "1"){
              // --------------------------------------------------------------
             // 4️⃣ **Filter tambahan untuk assignment user**
             // --------------------------------------------------------------                   
-            $userId = Auth::id();                     // id karyawan yang login
-            $userEmail = Auth::user()->email ?? '';   // (bila diperlukan)
+           
 
             // a) Task yang langsung di‑assign ke user
             $assignedTaskIds = Task::whereHas('assignments', function ($q) use ($userEmail) {
@@ -155,13 +129,15 @@ public function index(Request $request)
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
-    }
+    
 
     $childStatuses = ChildStatus::get();
     $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
     $employees = Karyawan::select('id', 'nama_karyawan')->get();
+    $currentKaryawan = Karyawan::where('email', $userEmail)->first();
+    $currentKaryawanId = $currentKaryawan ? $currentKaryawan->id : null; 
 
-    return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
+    return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses', 'currentKaryawanId'))
         ->with([
             'filter_close' => $request->filter_close ?? null,
             'filter_mytask' => $request->filter_mytask ?? null,
@@ -407,15 +383,19 @@ private function buildTaskTree($tasks)
     $task->update($request->except(['assignments', 'link_names', 'link_urls']));
 
     // Handle assignments
-    if ($request->has('assignments') && is_array($request->assignments)) {
+   $assignments = $request->get('assignments', []); // Ambil 'assignments', jika tidak ada, default ke array kosong.
+
+    if (is_array($assignments)) {
         $now = now();
-        $pivot = collect($request->assignments)->mapWithKeys(function ($id) use ($now) {
+        $pivot = collect($assignments)->mapWithKeys(function ($id) use ($now) {
             return [$id => [
                 'assigned_at'  => $now,
                 'completed_at' => null,
                 'is_completed' => false,
             ]];
         })->toArray();
+
+        // Jika $pivot kosong (assignments: []), sync([]) akan menghapus semua.
         $task->assignments()->sync($pivot);
     }
 
@@ -431,6 +411,12 @@ private function buildTaskTree($tasks)
             }
         }
     }
+
+    TaskStatusLog::create([
+        'task_id'  => $task->id,
+        'child_status_id' => $request->current_status_id,
+        'user_id' => auth()->id()
+    ]);
 
     return redirect()->route('tasks.index')
         ->with('success', 'Tugas berhasil dibuat');

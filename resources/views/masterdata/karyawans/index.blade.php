@@ -79,9 +79,9 @@
             @endphp
 
             @if($sisaHari < 0)
-                <span class="text-red-600 font-medium">{{ $sisaHari }}</span>
+                <span class="text-green-600  font-medium">{{ $sisaHari }}</span>
             @else
-                <span class="text-green-600 font-medium">{{ $sisaHari }}</span>
+                <span class="text-red-600  font-medium">{{ $sisaHari }}</span>
             @endif
         </td>
 

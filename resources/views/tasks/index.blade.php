@@ -165,6 +165,7 @@
 
     <div id="context-menu" style="display:none; position:absolute; background:white; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:1000; width: 150px;">
         <ul style="list-style:none; margin:0; padding:5px 0;">
+            <li><a href="#" id="context-timesheet" style="border-bottom: 1px solid #6e6d6dff; display:block; padding:8px 15px; color:#108f32; text-decoration:none;">Buat Timesheet</a></li>
             <li><a href="#" id="context-edit" style="display:block; padding:8px 15px; color:#fbbf24; text-decoration:none;">Edit</a></li>
             <li><a href="#" id="context-delete" style="display:block; padding:8px 15px; color:#dc2626; text-decoration:none;">Hapus</a></li>
         </ul>
@@ -231,144 +232,110 @@
 </div>
 
     {{-- Modal untuk Tambah Child Task --}}
-    <div id="createChildTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-        <div class="relative top-10 sm:top-20 mx-auto p-5 border w-7/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div class="flex justify-between items-center pb-3">
-                <h3 class="text-lg font-medium text-gray-900">Tambah Sub-Task untuk "<span id="parentTaskTitle"></span>"</h3>
-                <button type="button" class="text-gray-400 hover:text-gray-500" onclick="closeCreateChildModal()">
-                    <span class="sr-only">Tutup</span>
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="mt-2">
-                <form action="{{ route('tasks.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                    @csrf
-                    <input type="hidden" name="parent_id" id="parentTaskId">
+   <div id="createChildTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-10 mx-auto p-4 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-3 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Tambah Sub-Task untuk "<span id="parentTaskTitle"></span>"</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-500" onclick="closeCreateChildModal()">
+                <span class="sr-only">Tutup</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="mt-4">
+            <form action="{{ route('tasks.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <input type="hidden" name="parent_id" id="parentTaskId">
 
+                <div>
+                    <label for="child_title" class="block text-sm font-medium text-gray-700 mb-1">Judul Sub-Task</label>
+                    <input type="text" name="title" id="child_title" value="{{ old('title') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Masukkan judul sub-task" required>
+                </div>
+
+                <div>
+                    <label for="child_description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                    <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Deskripsikan sub-task"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
                     <div>
-                        <label for="child_title" class="block text-sm font-medium text-gray-700">Judul Sub-Task</label>
-                        <input type="text" name="title" id="child_title" value="{{ old('title') }}"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="Masukkan judul sub-task" required>
+                        <label for="planned_start" class="block text-sm font-medium text-gray-700">Plan Mulai</label>
+                        <input type="date" name="planned_start" id="planned_start" value="{{ now()->format('Y-m-d') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
-
                     <div>
-                        <label for="child_description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                        <textarea name="description" id="description" rows="4"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="Deskripsikan sub-task"></textarea>
+                        <label for="planned_end" class="block text-sm font-medium text-gray-700">Plan Selesai</label>
+                        <input type="date" name="planned_end" id="planned_end" value="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="planned_start" class="block text-sm font-medium text-gray-700">Plan Mulai</label>
-                            <input type="date" name="planned_start" id="planned_start" value="{{  now()->format('Y-m-d') }}"
-
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="planned_end" class="block text-sm font-medium text-gray-700">Plan Selesai</label>
-                            <input type="date" name="planned_end" id="planned_end" value=""
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
+                    <div>
+                        <label for="actual_start" class="block text-sm font-medium text-gray-700">Real Mulai</label>
+                        <input type="date" name="actual_start" id="actual_start" value="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="actual_start" class="block text-sm font-medium text-gray-700">Real Mulai</label>
-                            <input type="date" name="actual_start" id="actual_start" value=""
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="actual_end" class="block text-sm font-medium text-gray-700">Real Selesai</label>
-                            <input type="date" name="actual_end" id="actual_end" value=""
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
+                    <div>
+                        <label for="actual_end" class="block text-sm font-medium text-gray-700">Real Selesai</label>
+                        <input type="date" name="actual_end" id="actual_end" value="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
+                </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     <div>
                         <label for="head_status_id" class="block text-sm font-medium text-gray-700">Head Status</label>
-                        <select name="head_status_id" id="head_status_id" required
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select name="head_status_id" id="head_status_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Pilih Status Kepala</option>
                             @foreach($headStatuses as $status)
-                                <option value="{{ $status->id }}" {{ (int)old('head_status_id') === $status->id ? 'selected' : '' }}>
-                                    {{ $status->head_status_name }}
-                                </option>
+                            <option value="{{ $status->id }}" {{ (int)old('head_status_id') === $status->id ? 'selected' : '' }}>
+                                {{ $status->head_status_name }}
+                            </option>
                             @endforeach
                         </select>
                     </div>
-
                     <div>
                         <label for="current_status_id" class="block text-sm font-medium text-gray-700">Status Child</label>
-                        <select name="current_status_id" id="current_status_id" required
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select name="current_status_id" id="current_status_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Memuat...</option>
                         </select>
                     </div>
-
-                    <div>
-                        <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
-                        <select name="assignments[]" id="assignments" multiple
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                data-placeholder="Cari dan pilih karyawan...">
-                            @if(isset($employees) && $employees->count())
-                                @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}"
-                                            data-username="{{ $emp->username_git ?? '' }}"
-                                            {{ in_array($emp->id, old('assignments', [])) ? 'selected' : '' }}>
-                                        {{ $emp->nama_karyawan ?? $emp->name ?? 'Karyawan #'.$emp->id }}
-                                    </option>
-                                @endforeach
-                            @endif
-                        </select>
-                        <p class="text-sm text-gray-500 mt-1">Ketik untuk mencari, tekan Enter untuk memilih.</p>
-                    </div>
-
-                    <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">Link References</label>
-    <div id="links-container">
-                <div class="link-item flex gap-2 mb-2">
-                    <input type="text" name="link_names[]" 
-                           value=""
-                           placeholder="Nama Link"
-                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <input type="url" name="link_urls[]" 
-                           value=""
-                           placeholder="https://example.com"
-                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <button type="button" class="remove-link bg-red-500 text-white px-3 rounded-md hover:bg-red-600">
-                        Hapus
-                    </button>
                 </div>
-    </div>
-    <button type="button" id="add-link" class="mt-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
-        + Tambah Link
-    </button>
-</div>
 
-                    <div>
-                        <label for="child_attachment" class="block text-sm font-medium text-gray-700">Lampiran</label>
-                        <input type="file" name="attachment" id="child_attachment"
-                               class="mt-1 block w-full text-sm text-gray-500
-                               file:mr-4 file:py-2 file:px-4
-                               file:rounded-md file:border-0
-                               file:text-sm file:font-semibold
-                               file:bg-indigo-50 file:text-indigo-700
-                               hover:file:bg-indigo-100">
-                        <p class="mt-2 text-sm text-gray-500">Opsional: Upload file terkait task.</p>
-                    </div>
+                <div>
+                    <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
+                    <select name="assignments[]" id="assignments" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" data-placeholder="Cari dan pilih karyawan...">
+                        @if(isset($employees) && $employees->count())
+                        @foreach($employees as $emp)
+                        <option value="{{ $emp->id }}" data-username="{{ $emp->username_git ?? '' }}" {{ in_array($emp->id, old('assignments', [])) ? 'selected' : '' }}>
+                            {{ $emp->nama_karyawan ?? $emp->name ?? 'Karyawan #'.$emp->id }}
+                        </option>
+                        @endforeach
+                        @endif
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Link References</label>
+                    <div id="links-container" class="space-y-2">
+                        </div>
+                    <button type="button" id="add-link" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Tambah Link</button>
+                </div>
 
-                    <div class="flex justify-end gap-3">
-                        <button type="button" onclick="closeCreateChildModal()" class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Batal</button>
-                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Simpan Sub-Task</button>
-                    </div>
-                </form>
-            </div>
+                <div>
+                    <label for="child_attachment" class="block text-sm font-medium text-gray-700">Lampiran</label>
+                    <input type="file" name="attachment" id="child_attachment" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t">
+                    <button type="button" onclick="closeCreateChildModal()" class="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Simpan Sub-Task</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+    {{-- Form untuk Hapus --}}
+<form id="delete-task-form" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 </x-app-layout>
 
 <!-- Styles and Scripts -->
@@ -1003,159 +970,73 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 
-<script>
-    const contextMenu = document.getElementById('context-menu');
-    let selectedTaskId = null;
+ <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Bagian Pengaturan Elemen ---
+        const contextMenu = document.getElementById('context-menu');
+        const contextEdit = document.getElementById('context-edit');
+        const contextDelete = document.getElementById('context-delete');
+        const contextTimesheet = document.getElementById('context-timesheet');
+        const deleteTaskForm = document.getElementById('delete-task-form'); // Pastikan form ini ada di HTML Anda
+        const taskRows = document.querySelectorAll('.task-row');
 
-    // Fungsi untuk sembunyikan menu konteks
-    function hideContextMenu() {
-        contextMenu.style.display = 'none';
-        selectedTaskId = null;
-    }
+        // Variabel untuk menyimpan URL yang aktif saat menu muncul
+        let activeDeleteUrl = null;
 
-    // Event klik kanan di baris tabel dengan class 'task-row'
-    document.querySelectorAll('.task-row').forEach(row => {
-        
-        row.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            
-            selectedTaskId = this.getAttribute('data-task-id');
-            
-            // atur posisi menu konteks di mouse pointer
-            contextMenu.style.top = `${e.pageY}px`;
-            contextMenu.style.left = `${e.pageX}px`;
-            contextMenu.style.display = 'block';
+        // --- Event Listener untuk Setiap Baris Tugas ---
+        taskRows.forEach(function (row) {
+            row.addEventListener('contextmenu', function (e) {
+                e.preventDefault(); // Mencegah menu default browser
+                
+                // Ambil semua data dari atribut baris
+                const editUrl = row.getAttribute('data-edit-url');
+                const deleteUrl = row.getAttribute('data-delete-url');
+                const taskId = row.getAttribute('data-task-id');
+                const isAssignedToMe = row.getAttribute('data-is-assigned-to-me') === 'true';
+
+                // 1. Atur link untuk tombol Edit
+                contextEdit.href = editUrl;
+                
+                // 2. Logika untuk tombol Timesheet (tampilkan/sembunyikan)
+                if (isAssignedToMe) {
+                    const timesheetUrl = `{{ url('/timesheets/create') }}?task_id=${taskId}`;
+                    contextTimesheet.href = timesheetUrl;
+                    contextTimesheet.parentElement.style.display = 'block';
+                } else {
+                    contextTimesheet.parentElement.style.display = 'none';
+                }
+
+                // 3. Simpan URL Hapus yang sedang aktif
+                activeDeleteUrl = deleteUrl;
+
+                // Tampilkan menu di posisi kursor
+                contextMenu.style.top = e.pageY + 'px';
+                contextMenu.style.left = e.pageX + 'px';
+                contextMenu.style.display = 'block';
+            });
         });
-    });
+        
+        // --- Event Listener untuk Tombol Hapus ---
+        contextDelete.addEventListener('click', function (e) {
+            e.preventDefault(); // Mencegah link berpindah halaman
+            
+            // Gunakan URL yang sudah disimpan
+            if (activeDeleteUrl && confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+                deleteTaskForm.action = activeDeleteUrl;
+                deleteTaskForm.submit();
+            }
+        });
 
-    // Klik di luar menu konteks akan sembunyikan menu
-    document.addEventListener('click', function(e) {
-        if (!contextMenu.contains(e.target)) {
-            hideContextMenu();
-        }
-    });
-
-    // Klik menu "Edit"
-    document.getElementById('context-edit').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (!selectedTaskId) return;
-        window.location.href = `/tasks/${selectedTaskId}/edit`;
-    });
-
-    // Klik menu "Hapus"
-    document.getElementById('context-delete').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (!selectedTaskId) return;
-        if (confirm('Yakin ingin menghapus task ini?')) {
-            // Buat form dan submit secara dinamis
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/tasks/${selectedTaskId}`;
-            form.innerHTML = `
-                @csrf
-                @method('DELETE')
-            `;
-            document.body.appendChild(form);
-            form.submit();
-        }
+        // --- Sembunyikan Menu Saat Klik di Luar ---
+        window.addEventListener('click', function () {
+            if (contextMenu.style.display === 'block') {
+                contextMenu.style.display = 'none';
+                // Reset URL aktif setelah menu ditutup untuk keamanan
+                activeDeleteUrl = null; 
+            }
+        });
     });
 </script>
-<!-- 
-<script>
-document.querySelectorAll('.toggle-child').forEach(button => {
-     const toggleButtons = document.querySelectorAll('.toggle-child');
-    button.addEventListener('click', () => {
-        const parentId = button.getAttribute('data-id');
-        const childRows = document.querySelectorAll(`.task-row[data-parentid="${parentId}"]`);
-        const isOpen = button.getAttribute('data-open') === 'true'; // Gunakan atribut data untuk track state
-
-        // Ubah ikon berdasarkan status
-        const eyeOpen = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        `;
-
-        const eyeClosed = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7A10.05 10.05 0 0112 11c4.478 0 8.268 2.943 9.543 7a10.05 10.05 0 01-1.125 1.21" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.5a3 3 0 11-3-3 3 3 0 013 3z" />
-            </svg>
-        `;
-
-        childRows.forEach(row => {
-            row.style.display = isOpen ? 'none' : 'table-row';
-        });
-
-        // Ganti ikon secara dinamis
-        if (isOpen) {
-            button.innerHTML = eyeClosed; // Tertutup
-            button.setAttribute('data-open', 'false');
-        } else {
-            button.innerHTML = eyeOpen; // Terbuka
-            button.setAttribute('data-open', 'true');
-        }
-    });
-});
-
-</script> -->
-
-<!-- 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const toggleButtons = document.querySelectorAll('.toggle-child');
-
-    toggleButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const taskId = this.getAttribute('data-id');
-            const parentId = this.getAttribute('data-parentid');
-            const isOpen = this.getAttribute('data-open') === 'true';
-
-            // Toggle tombol (mata) -> dari "buka" ke "tutup" atau sebaliknya
-
-              const eyeOpen = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        `;
-
-        const eyeClosed = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7A10.05 10.05 0 0112 11c4.478 0 8.268 2.943 9.543 7a10.05 10.05 0 01-1.125 1.21" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.5a3 3 0 11-3-3 3 3 0 013 3z" />
-            </svg>
-        `;
-
-            const icon = this.querySelector('svg');
-           
-            if (isOpen) {
-                this.setAttribute('data-open', 'false');
-                icon.innerHTML = eyeClosed;
-            } else {
-                this.setAttribute('data-open', 'true');
-                icon.innerHTML = eyeOpen;
-            }
-
-            // Cari semua child task yang punya parent_id = taskId
-            const childRows = document.querySelectorAll(`.task-row[data-parentid="${taskId}"]`);
-
-            if (isOpen) {
-                // Sembunyikan semua child
-                childRows.forEach(row => {
-                    row.classList.add('hidden');
-                });
-            } else {
-                // Tampilkan semua child
-                childRows.forEach(row => {
-                    row.classList.remove('hidden');
-                });
-            }
-        });
-    });
-});
-</script> -->
 
 
 <script>
@@ -1175,10 +1056,9 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
 
         const eyeClosed = `
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7A10.05 10.05 0 0112 11c4.478 0 8.268 2.943 9.543 7a10.05 10.05 0 01-1.125 1.21" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.5a3 3 0 11-3-3 3 3 0 013 3z" />
-            </svg>
+           <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" />
+</svg>
         `;
 
             // Toggle status tombol
