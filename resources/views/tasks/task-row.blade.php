@@ -11,23 +11,31 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
  data-childid="{{ $task->id }}" 
  data-task-id="{{ $task->id }}">
 
-<td>
-         <!-- Icon expand/collapse hanya jika ada child -->
-        @if($task->children->isNotEmpty())
-        <button class="toggle-child"  data-open="true" data-parentid="{{ $task->parent_id }}" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        </button>
-        @endif
-    </td>
+
     <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
-           <div style="font-size: 14px;"> <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span> 
+           <!-- Icon expand/collapse hanya jika ada child -->
+      
+          <div class="flex items-center gap-2">
+
+    <div class="flex-shrink-0 w-8 text-center pt-2">
+        @if($task->children->isNotEmpty())
+            <button class="toggle-child" data-open="true" data-parentid="{{ $task->parent_id }}" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
+                <svg class="w-5 h-5 text-gray-600 mx-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            </button>
+        @endif
+    </div>
+
+    <div class="flex-grow text-sm">
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span>
         <a href="{{ route('tasks.view', $task) }}" target="blank" class="text-gray-900 hover:underline font-semibold">
             {{ $task->title }}
-</a>
-        </div>
+        </a>
+    </div>
+    
+</div>
         </td>
         <td>
             <button

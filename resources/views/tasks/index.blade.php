@@ -13,6 +13,21 @@
     <h3 class="text-lg font-medium text-gray-900">Daftar Task</h3>
     
     <div class="flex flex-wrap items-center gap-4 mt-4">
+        <form method="GET" action="{{ route('tasks.index') }}" id="filterFormTaskChoose" class="flex flex-wrap items-center gap-2">
+
+        <div style="width: 300px;">
+            <select name="search_ids[]" id="taskSearchSelect" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" multiple>
+                @foreach($searchableTasks as $task)
+                    <option value="{{ $task->id }}" 
+                        {{-- Cek apakah ID task ada di dalam array request --}}
+                        @selected(in_array($task->id, request('search_ids', [])))>
+                        {{ $task->title }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+    </form>
         <!-- Form Filter -->
         <form method="GET" action="{{ route('tasks.index') }}" id="filterForm" class="flex flex-wrap items-center gap-2">
             
@@ -125,7 +140,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4/12" colspan="3">Judul Task</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4/12" colspan="2">Judul Task</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2">Status Saat Ini</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan End</th>
@@ -140,9 +155,7 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200" id="tasks-container">
                                 @foreach($tasks as $task)
-                                    @if(!$task->parent_id)
                                         @include('tasks.task-row', ['task' => $task, 'level' => 0, 'childStatuses' => $childStatuses])
-                                    @endif
                                 @endforeach
                                 
                                 @if($tasks->count() == 0)
@@ -481,6 +494,19 @@
     // Script untuk Filter - Tambahkan setelah script Select2 yang sudah ada
 $(document).ready(function () {
 
+     // Inisialisasi Select2 untuk combobox pencarian task multiple
+    $('#taskSearchSelect').select2({
+        placeholder: "Pilih satu atau lebih task...",
+        allowClear: true
+    });
+
+    // ==========================================================
+    // (BARU) Event Listener untuk auto-submit saat pilihan berubah
+    // ==========================================================
+    $('#taskSearchSelect').on('change', function() {
+        // Langsung submit form filter
+        $('#filterFormTaskChoose').submit();
+    });
      
      $('.statustask').select2({
             templateResult: function (data) {

@@ -26,118 +26,124 @@ public function view(Task $task)
     return view('tasks.view', compact('task'));
 }
  
+
+// app/Http/Controllers/TaskController.php
+
+// app/Http/Controllers/TaskController.php
+
 public function index(Request $request)
 {
-// Ambil parameter filter dari request
-  $filterClose = $request->get('filter_close', '0');
-  $filterMyTask  = $request->get('filter_mytask', '0');
+    // Ambil semua parameter filter
+    $filterClose = $request->get('filter_close', '0');
+    $filterMyTask  = $request->get('filter_mytask', '0');
     $operator = $request->get('operator', '');
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
+    $searchIds = $request->get('search_ids', []); // (DIUBAH) Menerima array ID
 
-        $userId = Auth::id();                     // id karyawan yang login
-            $userEmail = Auth::user()->email ?? '';   // (bila diperlukan)
+    $searchTitles = [];
+    // **LOGIKA BARU**: Jika ada ID dari combobox, ambil semua judulnya
+    if (!empty($searchIds)) {
+        $searchTitles = Task::whereIn('id', $searchIds)->pluck('title')->toArray();
+    }
+
+    $userId = Auth::id();
+    $userEmail = Auth::user()->email ?? '';
     
-       
-        // Ambil semua tasks yang valid (status bukan CLOSE) dalam satu query
-        $validTasksQuery = Task::with([
-            'parent',
-            'headStatus',
-            'currentStatus',
-            'assignments', 
-            'files',
-            'comments' => function ($query) {
-                $query->latest()->take(20);
-            },
-            'comments.user'
-        ]);
+    // Query dasar
+    $validTasksQuery = Task::with([
+        'parent', 'headStatus', 'currentStatus', 'assignments', 'files',
+        'comments' => fn($q) => $q->latest()->take(20),
+        'comments.user'
+    ]);
 
-        if (!$request->has('filter_close') && !$request->filter_close == '1') {
-            $validTasksQuery = $validTasksQuery->whereHas('currentStatus', function ($q) {
-                $q->where('status_code', '<>', 'CLOSE');
-            });
+    $matchingTaskIds = [];
+
+    // **LOGIKA BARU**: Menggabungkan pencarian dari input teks dan combobox
+    if (!empty($searchQuery) || !empty($searchTitles)) {
+        $matchingTaskIds = Task::query()
+            ->where(function ($query) use ($searchQuery, $searchTitles) {
+                // Pencarian dari input teks
+                if (!empty($searchQuery)) {
+                    $query->where('title', 'LIKE', '%' . $searchQuery . '%');
+                }
+                // Pencarian dari combobox (multiple)
+                if (!empty($searchTitles)) {
+                    foreach ($searchTitles as $title) {
+                        $query->orWhere('title', 'LIKE', '%' . $title . '%');
+                    }
+                }
+            })
+            ->pluck('id')->toArray();
+
+        if (!empty($matchingTaskIds)) {
+            $descendantIds = $this->collectDescendantIds($matchingTaskIds);
+            $allRelevantIds = array_unique(array_merge($matchingTaskIds, $descendantIds));
+            $validTasksQuery->whereIn('id', $allRelevantIds);
+        } else {
+            $validTasksQuery->whereRaw('0 = 1');
         }
+    }
+    
+    // ... Sisa filter lainnya tetap sama ...
+    if (!$request->has('filter_close') || $request->filter_close != '1') {
+        $validTasksQuery->whereHas('currentStatus', fn($q) => $q->where('status_code', '<>', 'CLOSE'));
+    }
 
-        // Terapkan filter operator dan status jika ada
-        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
-            if ($operator === '=') {
-                $validTasksQuery->whereIn('current_status_id', $statusIds);
-            } elseif ($operator === '!=') {
-                $validTasksQuery->whereNotIn('current_status_id', $statusIds);
-            }
-        }
-
-        // Terapkan filter search jika ada
-        if (!empty($searchQuery)) {
-            $validTasksQuery->where('title','like','%'.$searchQuery.'%');
-        }
-
-
-        if($filterMyTask == "1"){
-             // --------------------------------------------------------------
-            // 4️⃣ **Filter tambahan untuk assignment user**
-            // --------------------------------------------------------------                   
-           
-
-            // a) Task yang langsung di‑assign ke user
-            $assignedTaskIds = Task::whereHas('assignments', function ($q) use ($userEmail) {
-                $q->where('email', $userEmail);
-            })->pluck('id')->toArray();
-
-            // b) Dapatkan semua ancestor (parent‑parent‑…) dari task yang di‑assign
+    if (!empty($operator) && !empty($statusIds)) {
+        $validTasksQuery->where(fn($q) => $operator === '=' ? $q->whereIn('current_status_id', $statusIds) : $q->whereNotIn('current_status_id', $statusIds));
+    }
+    
+    if($filterMyTask == "1"){
+        $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $userEmail))->pluck('id')->toArray();
+        if (!empty($assignedTaskIds)) {
             $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
-
-            // c) Dapatkan semua descendant (children‑children‑…) dari task yang di‑assign
             $descendantIds = $this->collectDescendantIds($assignedTaskIds);
-
-            // d) Gabungkan semua ID yang relevan
-            $relevantTaskIds = array_unique(array_merge(
-                $assignedTaskIds,
-                $ancestorIds,
-                $descendantIds
-            ));
-
-            // e) Terapkan filter ke query utama (hanya ambil task yang termasuk dalam $relevantTaskIds)
-            if (!empty($relevantTaskIds)) {
-                $validTasksQuery->whereIn('id', $relevantTaskIds);
-            } else {
-                // Jika tidak ada task yang relevan, kembalikan collection kosong
-                $validTasksQuery->whereRaw('0 = 1');
-            }
+            $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
+            $validTasksQuery->whereIn('id', $relevantTaskIds);
+        } else {
+            $validTasksQuery->whereRaw('0 = 1');
         }
-       
-
-        $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
-
-        // Buat tree structure dari flat collection
-        $taskTree = $this->buildTaskTree($allValidTasks);
-        
-        // Convert ke paginated result (ambil parent tasks saja untuk pagination)
-        $parentTasks = $taskTree->where('parent_id', null);
-        
-        // Manual pagination
-        $page = $request->get('page', 1);
-        $perPage = 100;
-        $offset = ($page - 1) * $perPage;
-        
-        $paginatedParents = $parentTasks->slice($offset, $perPage)->values();
-        
-        $tasks = new \Illuminate\Pagination\LengthAwarePaginator(
-            $paginatedParents,
-            $parentTasks->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+    }
     
+    $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
+    $taskTree = $this->buildTaskTree($allValidTasks);
+    
+    $tasksForDisplay = collect();
+    if (!empty($searchQuery) || !empty($searchTitles)) {
+        $tasksForDisplay = $taskTree->whereIn('id', $matchingTaskIds);
+    } else {
+        $tasksForDisplay = $taskTree->where('parent_id', null);
+    }
+    
+    // ... Sisa kode pagination dan return view tetap sama ...
+    $page = $request->get('page', 1);
+    $perPage = 100;
+    $offset = ($page - 1) * $perPage;
+    $paginatedTasks = $tasksForDisplay->slice($offset, $perPage)->values();
+    
+    $tasks = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginatedTasks,
+        $tasksForDisplay->count(),
+        $perPage,
+        $page,
+        ['path' => request()->url(), 'query' => request()->query()]
+    );
+    
+    $searchableTasks = Task::whereHas('currentStatus', fn($q) => $q->where('status_code', '<>', 'CLOSE'))
+                            ->orderBy('title')
+                            ->get(['id', 'title']);
 
     $childStatuses = ChildStatus::get();
     $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
-    $employees = Karyawan::select('id', 'nama_karyawan')->get();
+    $employees = Karyawan::select('id', 'nama_karyawan', 'nickname')->get();
     $currentKaryawan = Karyawan::where('email', $userEmail)->first();
     $currentKaryawanId = $currentKaryawan ? $currentKaryawan->id : null; 
 
-    return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses', 'currentKaryawanId'))
+    return view('tasks.index', compact(
+            'employees', 'tasks', 'childStatuses', 'headStatuses', 'currentKaryawanId',
+            'searchableTasks'
+        ))
         ->with([
             'filter_close' => $request->filter_close ?? null,
             'filter_mytask' => $request->filter_mytask ?? null,
@@ -411,6 +417,7 @@ private function buildTaskTree($tasks)
             }
         }
     }
+
 
     TaskStatusLog::create([
         'task_id'  => $task->id,
