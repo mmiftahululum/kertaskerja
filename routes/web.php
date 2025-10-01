@@ -9,6 +9,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ActivityLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,12 +58,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/apps/update/{id}', [MasterAppController::class, 'update'])->name('masterapps.update');
     Route::get('/apps/destroy/{id}', [MasterAppController::class, 'destroy'])->name('masterapps.destroy');
 
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+
     Route::resource('head-statuses', HeadStatusController::class);
     Route::resource('child-statuses', ChildStatusController::class);
     Route::resource('tasks', TaskController::class);
 
+    Route::patch('/tasks/{task}/set-parent', [TaskController::class, 'setParent'])->name('tasks.set-parent');
     Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
-    Route::get('/tasks/view/{task}', [TaskController::class, 'view'])->name('tasks.view');
+    Route::get('/tasks/view/{task}', [TaskController::class, 'show'])->name('tasks.view');
 
     Route::post('/tasks/bookmarks', [App\Http\Controllers\TaskFilterBookmarkController::class, 'store'])->name('tasks.bookmarks.store');
     Route::delete('/tasks/bookmarks/{bookmark}', [App\Http\Controllers\TaskFilterBookmarkController::class, 'destroy'])->name('tasks.bookmarks.destroy');

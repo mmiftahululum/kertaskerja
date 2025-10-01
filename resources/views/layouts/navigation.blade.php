@@ -97,6 +97,10 @@
                             </x-slot>
                         </x-dropdown>
                     </div>
+
+                    <x-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.index')">
+                        {{ __('Activity Log') }}
+                    </x-nav-link>
                 </div>
             </div>
 

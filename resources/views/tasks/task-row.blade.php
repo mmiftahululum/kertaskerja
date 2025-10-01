@@ -3,14 +3,15 @@
     $isAssignedToMe = $task->assignments->contains('id', $currentKaryawanId);
 @endphp
 
-<tr style="background:{{ $task->currentStatus->status_color }}0D;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" 
+<tr style="background:{{ $task->currentStatus->status_color }}0D; padding-left: {{ $level * 20 }}px;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" 
 data-edit-url="{{ route('tasks.edit', $task) }}"
 data-delete-url="{{ route('tasks.destroy', $task) }}"
  data-is-assigned-to-me="{{ $isAssignedToMe ? 'true' : 'false' }}" 
  data-parentid="{{ $task->parent_id }}" 
  data-childid="{{ $task->id }}" 
- data-task-id="{{ $task->id }}">
-
+ data-task-id="{{ $task->id }}"
+data-level="{{ $level }}"
+draggable="true">
 
     <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 1 }}px">
            <!-- Icon expand/collapse hanya jika ada child -->
@@ -18,14 +19,14 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
           <div class="flex items-center">
 
     <div class="flex-shrink-0 w-8 text-center pt-2">
-        @if($task->children->isNotEmpty())
-             <button class="toggle-child" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
-        {{-- (DIUBAH) Ikon panah ke kanan dengan class untuk rotasi --}}
-        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
+      @if($task->children->isNotEmpty())
+    <button class="toggle-child" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
+        {{-- (DIUBAH) Ikon panah kanan + class rotate-90 agar defaultnya ke bawah --}}
+        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200 rotate-90" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
         </svg>
     </button>
-        @endif
+@endif
     </div>
 
     <div class="flex-grow text-sm">
@@ -123,7 +124,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
         @if($task->assignments && $task->assignments->count())
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
-                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}"><span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
+                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}?text={{ $task->title }}"><span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
                         {{ $assignment->nickname }}
                     </span></a>
                 @endforeach

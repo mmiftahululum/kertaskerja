@@ -245,7 +245,7 @@
 
     {{-- Modal untuk Komentar --}}
     <div id="comment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg w-full max-w-lg mx-4 p-6">
+        <div class="bg-white rounded-lg w-full max-w-2xl mx-4 p-6">
             <h3 class="text-lg font-semibold mb-4" id="modal-task-title"></h3>
 
     
@@ -262,11 +262,11 @@
                 <input type="hidden" name="task_id" id="modal-task-id">
                  {{-- (BARU) Tambahkan input ini juga --}}
                 <input type="hidden" name="_redirect_params" id="commentRedirectParams">
-                <textarea name="comment"
+                <input name="comment"
                           class="w-full border rounded p-2 mb-3"
                           rows="3"
                           placeholder="Tuliskan komentar…"
-                          required></textarea>
+                          required></input>
                 <div class="flex justify-end space-x-2">
                     <button type="button"
                             class="px-4 py-2 bg-gray-300 rounded"
@@ -944,6 +944,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('comment-modal').classList.remove('hidden');
         loadComments(taskId);
+
+         setTimeout(function() {
+            document.querySelector('#comment-form input[name="comment"]').focus();
+        }, 100);
     }
 
     function closeCommentModal() {
@@ -1083,6 +1087,110 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
  <script>
+
+// resources/views/tasks/index.blade.php (di dalam @push('scripts'))
+
+document.addEventListener('DOMContentLoaded', function () {
+    const taskContainer = document.getElementById('tasks-container'); // Ambil tbody
+    const taskRows = document.querySelectorAll('.task-row');
+
+    // --- Event Listener untuk Setiap Baris (TR) ---
+    taskRows.forEach(row => {
+        // Saat mulai men-drag sebuah baris
+        row.addEventListener('dragstart', (e) => {
+            e.target.classList.add('opacity-50', 'bg-yellow-100');
+            e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        // Saat baris yang di-drag berada DI ATAS baris lain (memberi highlight)
+        row.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Izinkan drop di atas baris ini
+            e.target.closest('.task-row').classList.add('bg-blue-100');
+        });
+
+        // Saat baris yang di-drag meninggalkan area baris lain
+        row.addEventListener('dragleave', (e) => {
+            e.target.closest('.task-row').classList.remove('bg-blue-100');
+        });
+
+        // Saat baris yang di-drag DILEPASKAN di atas baris lain
+        row.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // (PENTING) Hentikan event agar tidak 'bubble up' ke tbody
+            e.target.closest('.task-row').classList.remove('bg-blue-100');
+
+            const draggedTaskId = e.dataTransfer.getData('text/plain');
+            const targetTaskId = e.target.closest('.task-row').dataset.taskId;
+
+            // Jangan lakukan apa-apa jika dilepas di atas dirinya sendiri
+            if (draggedTaskId === targetTaskId) return;
+
+            await updateTaskParent(draggedTaskId, targetTaskId);
+        });
+
+        // Saat proses drag selesai
+        row.addEventListener('dragend', (e) => {
+            e.target.classList.remove('opacity-50', 'bg-yellow-100');
+        });
+    });
+
+    // --- (BARU) Event Listener untuk Container Utama (TBODY) ---
+    if (taskContainer) {
+        // Saat baris yang di-drag berada DI ATAS area tbody (di antara baris)
+        taskContainer.addEventListener('dragover', (e) => {
+            e.preventDefault(); // (SANGAT PENTING) Izinkan drop di area ini
+            // Ini akan menghilangkan ikon "stop"
+        });
+
+        // Saat baris yang di-drag DILEPASKAN di area tbody (bukan di atas baris lain)
+        taskContainer.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const draggedTaskId = e.dataTransfer.getData('text/plain');
+
+            // Melepas di area utama berarti menjadikannya parent level 0 (parent_id = null)
+            await updateTaskParent(draggedTaskId, null);
+        });
+    }
+
+    // Fungsi untuk mengirim perubahan ke server (tetap sama)
+     async function updateTaskParent(taskId, newParentId) {
+        // Tampilkan loading indicator (opsional, tapi bagus untuk UX)
+        document.body.style.cursor = 'wait';
+
+        try {
+            const response = await fetch(`/tasks/${taskId}/set-parent`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Mengambil token CSRF dari meta tag di layout Anda
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    parent_id: newParentId
+                })
+            });
+
+            // Ubah kembali cursor setelah request selesai
+            document.body.style.cursor = 'default';
+
+            if (response.ok) {
+                // Jika berhasil (status 200-299), muat ulang halaman untuk melihat struktur baru.
+                // Ini adalah cara paling sederhana dan andal.
+                window.location.reload();
+            } else {
+                // Jika ada error validasi dari server (status 422) atau error lainnya.
+                const data = await response.json();
+                alert('Gagal memindahkan tugas: ' + (data.error || 'Terjadi kesalahan di server.'));
+            }
+        } catch (error) {
+            document.body.style.cursor = 'default';
+            console.error('Error saat mengirim request:', error);
+            alert('Gagal terhubung ke server. Silakan periksa koneksi Anda.');
+        }
+    }
+});
+    
     document.addEventListener('DOMContentLoaded', function () {
         // --- Bagian Pengaturan Elemen ---
         const contextMenu = document.getElementById('context-menu');

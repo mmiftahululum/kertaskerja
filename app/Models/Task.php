@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Spatie\Activitylog\Traits\LogsActivity; // <-- 1. Import Trait
+use Spatie\Activitylog\LogOptions; 
 
 class Task extends Model
 {
     use HasFactory;
+     use LogsActivity;
 
     protected $fillable = [
         'title',
@@ -33,6 +36,14 @@ class Task extends Model
     ];
 
     
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'parent_id', 'current_status_id','description','head_status_id','current_status_id','planned_start','planned_end','actual_start','actual_end','progress_percent']) // Catat hanya perubahan pada kolom ini
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Karyawan ini telah {$eventName}") // Deskripsi log
+            ->useLogName('Task'); // Nama log untuk mempermudah filter
+    }
 
     // Relasi: Parent task (untuk sub-tugas)
     public function parent(): BelongsTo

@@ -26,8 +26,10 @@
                                     @continue
                                 @endif
 
+                                {{-- Kode BARU --}}
                                 <option data-name="{{ $mTask->title }}" value="{{ $mTask->id }}" {{ $mTask->id == $task->parent_id ? 'selected' : '' }}>
-                                    {{ $mTask->title }}
+                                    {{-- Tampilkan atribut 'path' yang sudah kita buat di controller --}}
+                                    {{ $mTask->path }}
                                 </option>
                             @endforeach
                         </select>
@@ -302,5 +304,42 @@ document.addEventListener('DOMContentLoaded', function() {
   // Script untuk Select2 status task
     $(document).ready(function () {
         $('#parent_id_set').select2();
+
+        // (BARU) Tambahkan event listener ini
+        $('#parent_id_set').on('change', function() {
+            const selectedId = $(this).val();
+            const pathDisplay = $('#parent-path-display');
+
+            if (!selectedId) {
+                pathDisplay.html('<span class="italic">Ini akan menjadi task utama (level 0)</span>');
+                return;
+            }
+
+            pathDisplay.html('<span>Memuat path...</span>');
+
+            // Panggil API yang sudah kita buat
+            fetch(`/api/tasks/${selectedId}/breadcrumbs`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        let pathHtml = '';
+                        data.forEach((item, index) => {
+                            // Gunakan route() helper dari Ziggy jika ada, atau hardcode URL
+                            const viewUrl = `{{ url('/tasks/view') }}/${item.id}`;
+                            pathHtml += `<a href="${viewUrl}" target="_blank" class="text-indigo-600 hover:underline">${item.title}</a>`;
+                            if (index < data.length - 1) {
+                                pathHtml += `<span class="mx-1 text-gray-400">/</span>`;
+                            }
+                        });
+                        pathDisplay.html(pathHtml);
+                    } else {
+                        pathDisplay.html('<span>Parent tidak ditemukan.</span>');
+                    }
+                })
+                .catch(() => {
+                    pathDisplay.html('<span class="text-red-500">Gagal memuat path.</span>');
+                });
+        });
+
     });
 </script>
