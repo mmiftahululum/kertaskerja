@@ -551,6 +551,36 @@
 }
 </style>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    /**
+     * Fungsi ini akan menambahkan event listener ke sebuah modal.
+     * Jika pengguna mengklik area latar belakang modal (bukan kontennya),
+     * modal akan ditutup dengan memanggil fungsi yang sesuai.
+     *
+     * @param {string} modalId - ID dari elemen modal.
+     * @param {Function} closeFunction - Fungsi JavaScript yang digunakan untuk menutup modal.
+     */
+    function setupModalOutsideClick(modalId, closeFunction) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(event) {
+                // event.target adalah elemen yang diklik.
+                // Kita cek apakah elemen yang diklik adalah modal itu sendiri.
+                if (event.target === modal) {
+                    closeFunction();
+                }
+            });
+        }
+    }
+
+    // Terapkan fungsi di atas ke setiap modal yang Anda miliki
+    setupModalOutsideClick('saveBookmarkModal', closeSaveBookmarkModal);
+    setupModalOutsideClick('comment-modal', closeCommentModal);
+    setupModalOutsideClick('taskStatusTimelineModal', closeTaskStatusTimelineModal);
+    setupModalOutsideClick('createChildTaskModal', closeCreateChildModal);
+});
+</script>
 
 <script>
 
