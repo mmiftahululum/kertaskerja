@@ -27,6 +27,7 @@ public function index(Request $request)
     $filterClose = $request->get('filter_close', '0');
     $filterMyTask  = $request->get('filter_mytask', '0');
     $operator = $request->get('operator', '');
+    $filterAssignedTo = $request->get('filter_assigned_to', '');
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
     $searchIds = $request->get('search_ids', []); // (DIUBAH) Menerima array ID
@@ -74,7 +75,44 @@ public function index(Request $request)
             $validTasksQuery->whereRaw('0 = 1');
         }
     }
-    
+
+
+      if($filterMyTask == "1" || $filterAssignedTo){
+
+        $emailToFilter = '';
+        if (!empty($filterAssignedTo)) {
+            $assignedEmployee = Karyawan::find($filterAssignedTo);
+            if ($assignedEmployee) {
+                $emailToFilter = $assignedEmployee->email;
+            }
+        } elseif ($filterMyTask == '1') {
+            $emailToFilter = $userEmail;
+        }
+
+        $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $emailToFilter))->pluck('id')->toArray();
+        
+        // 1. Ambil semua ID task yang di-assign ke user yang sedang login
+      
+
+        // 2. Jika user punya assignment
+        if (!empty($assignedTaskIds)) {
+            // 3. Ambil semua parent dari task-task tersebut (untuk konteks)
+            $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
+
+            // 4. Ambil semua child dari task-task tersebut (sub-tugas)
+            $descendantIds = $this->collectDescendantIds($assignedTaskIds);
+            
+            // 5. Gabungkan semua ID yang relevan (assigned, parents, children)
+            $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
+            
+            // 6. Terapkan ke query utama
+            $validTasksQuery->whereIn('id', $relevantTaskIds);
+        } else {
+            // Jika user tidak punya assignment sama sekali, jangan tampilkan apa-apa
+            $validTasksQuery->whereRaw('0 = 1');
+        }
+    }
+  
     // ... Sisa filter lainnya tetap sama ...
     if (!$request->has('filter_close') || $request->filter_close != '1') {
         $validTasksQuery->whereHas('currentStatus', fn($q) => $q->where('status_code', '<>', 'CLOSE'));
@@ -84,17 +122,18 @@ public function index(Request $request)
         $validTasksQuery->where(fn($q) => $operator === '=' ? $q->whereIn('current_status_id', $statusIds) : $q->whereNotIn('current_status_id', $statusIds));
     }
     
-    if($filterMyTask == "1"){
-        $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $userEmail))->pluck('id')->toArray();
-        if (!empty($assignedTaskIds)) {
-            $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
-            $descendantIds = $this->collectDescendantIds($assignedTaskIds);
-            $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
-            $validTasksQuery->whereIn('id', $relevantTaskIds);
-        } else {
-            $validTasksQuery->whereRaw('0 = 1');
-        }
-    }
+    // if($filterMyTask == "1"){
+    //     $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $userEmail))->pluck('id')->toArray();
+    //     if (!empty($assignedTaskIds)) {
+    //         $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
+    //         $descendantIds = $this->collectDescendantIds($assignedTaskIds);
+    //         $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
+    //         $validTasksQuery->whereIn('id', $relevantTaskIds);
+    //     } else {
+    //         $validTasksQuery->whereRaw('0 = 1');
+    //     }
+    // }
+    
     
     $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
     $taskTree = $this->buildTaskTree($allValidTasks);
@@ -586,7 +625,7 @@ private function buildTaskTree($tasks)
         ]);
     }
 
-     public function destroy($id)
+     public function destroy(Request $request, $id)
     {
         $task = Task::find($id);
 

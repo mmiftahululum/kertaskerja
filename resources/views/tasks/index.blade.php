@@ -106,6 +106,14 @@
                 <span class="text-sm">My Task</span>
             </label>
 
+            <select name="filter_assigned_to" class="filter_assigned_to border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="document.getElementById('filterForm').submit();">
+                <option value="">Semua Karyawan</option>
+                @foreach($employees as $employee)
+                    <option value="{{ $employee->id }}" {{ request('filter_assigned_to') == $employee->id ? 'selected' : '' }}>
+                        {{ $employee->nama_karyawan }}
+                    </option>
+                @endforeach
+            </select>
 
             <!-- Search Input -->
             <input type="search" name="q" value="{{ request('q') }}"
@@ -414,8 +422,9 @@
     {{-- Form untuk Hapus --}}
 <form id="delete-task-form" method="POST" style="display: none;">
     @csrf
+    <input type="hidden" name="_redirect_params" id="deleteRedirectParams">
     @method('DELETE')
-     <input type="hidden" name="_redirect_params" id="deleteRedirectParams">
+  
 </form>
 
 </x-app-layout>
@@ -610,7 +619,12 @@ $(document).ready(function () {
 
      // Inisialisasi Select2 untuk combobox pencarian task multiple
     $('#taskSearchSelect').select2({
-        placeholder: "Pilih satu atau lebih task...",
+        placeholder: "Pilih Task",
+        allowClear: true
+    });
+    
+    $('.filter_assigned_to').select2({
+        placeholder: "Assigment",
         allowClear: true
     });
 
@@ -1279,11 +1293,9 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Gunakan URL yang sudah disimpan
             if (activeDeleteUrl && confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
-
                   // (DIUBAH) Set parameter filter ke input tersembunyi
             document.getElementById('deleteRedirectParams').value = window.location.search;
-
-
+            
                 deleteTaskForm.action = activeDeleteUrl;
                 deleteTaskForm.submit();
             }
