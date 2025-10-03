@@ -77,7 +77,7 @@
         <!-- Form Filter -->
         <form method="GET" action="{{ route('tasks.index') }}" id="filterForm" class="flex flex-wrap items-center gap-2">
 
-        <div style="width: 300px;">
+        <div id="taskSearchSelectId" style="width: 300px; visibility: hidden;">
             <select name="search_ids[]" id="taskSearchSelect" class="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" multiple>
                 @foreach($searchableTasks as $task)
                     <option value="{{ $task->id }}" 
@@ -120,7 +120,7 @@
             </select>
 
             <!-- Status Multi-Select -->
-            <select name="status_ids[]" class="select2-filter" multiple="multiple" style="width: 300px;" data-placeholder="Pilih status...">
+            <select name="status_ids[]" class="select2-filter" multiple="multiple" style="width: 300px; visibility: hidden;" data-placeholder="Pilih status...">
                 @foreach($childStatuses as $status)
                     <option value="{{ $status->id }}" 
                             data-color="{{ $status->status_color ?? '#000000' }}"
@@ -199,13 +199,17 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4/12" colspan="2">Judul Task</th>
+                                   <th colspan="2" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Judul Task
+        </th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2">Status Saat Ini</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan End</th>
-                         
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mandays Plan</th> 
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual End</th>
+
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mandays Actual</th>
                          
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link Reference</th>
@@ -610,6 +614,7 @@ $(document).ready(function () {
         allowClear: true
     });
 
+    $('#taskSearchSelectId').css('visibility', 'visible');
     // ==========================================================
     // (BARU) Event Listener untuk auto-submit saat pilihan berubah
     // ==========================================================
@@ -1177,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', function () {
         taskContainer.addEventListener('drop', async (e) => {
             e.preventDefault();
             const draggedTaskId = e.dataTransfer.getData('text/plain');
-
+ 
             // Melepas di area utama berarti menjadikannya parent level 0 (parent_id = null)
             await updateTaskParent(draggedTaskId, null);
         });
@@ -1216,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             document.body.style.cursor = 'default';
             console.error('Error saat mengirim request:', error);
-            alert('Gagal terhubung ke server. Silakan periksa koneksi Anda.');
+            // alert('Gagal terhubung ke server. Silakan periksa koneksi Anda.');
         }
     }
 });
@@ -1298,61 +1303,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+     function hideAllDescendants(parentId) {
+        // Temukan semua anak langsung dari parentId
+        const children = document.querySelectorAll(`.task-row[data-parentid="${parentId}"]`);
+
+        children.forEach(child => {
+            // 1. Sembunyikan baris anak ini
+            child.classList.add('hidden');
+
+            // 2. Reset ikon panahnya ke posisi "tertutup" (kanan)
+            const childIcon = child.querySelector('.toggle-child svg');
+            if (childIcon) {
+                childIcon.classList.remove('rotate-90');
+            }
+            
+            // 3. Panggil fungsi ini lagi untuk anak ini, untuk menyembunyikan "cucu"
+            const childId = child.dataset.taskId; // Ambil ID dari anak ini
+            if (childId) {
+                hideAllDescendants(childId); // Rekursi
+            }
+        });
+    }
+
     const toggleButtons = document.querySelectorAll('.toggle-child');
 
     toggleButtons.forEach(button => {
-       button.addEventListener('click', function () {
+        button.addEventListener('click', function () {
             const taskId = this.getAttribute('data-id');
             const icon = this.querySelector('svg');
-            const childRows = document.querySelectorAll(`.task-row[data-parentid="${taskId}"]`);
 
-            // (DIUBAH) Toggle class 'rotate-90' untuk memutar ikon
+            // Cek apakah kita akan membuka (isOpening) atau menutup
+            // Jika tidak ada class 'rotate-90', berarti panah ke kanan (tertutup), dan kita akan membukanya.
+            const isOpening = !icon.classList.contains('rotate-90');
+
+            // Toggle rotasi panah
             icon.classList.toggle('rotate-90');
 
-            // Toggle class 'hidden' untuk menampilkan/menyembunyikan baris anak
-            childRows.forEach(row => {
-                row.classList.toggle('hidden');
-                // Jika kita menutup parent, pastikan semua cucu juga ikut tertutup
-                if (row.classList.contains('hidden')) {
-                    const grandChildRows = document.querySelectorAll(`.task-row[data-parentid="${row.dataset.taskId}"]`);
-                    grandChildRows.forEach(gcRow => gcRow.classList.add('hidden'));
-                    // Reset juga ikon panah di level cucu
-                    const childToggleButton = row.querySelector('.toggle-child svg');
-                    if(childToggleButton) {
-                        childToggleButton.classList.remove('rotate-90');
-                    }
-                }
-            });
+            if (isOpening) {
+                // Jika MEMBUKA: tampilkan HANYA anak-anak langsung (level 1)
+                const directChildren = document.querySelectorAll(`.task-row[data-parentid="${taskId}"]`);
+                directChildren.forEach(child => {
+                    child.classList.remove('hidden');
+                });
+            } else {
+                // Jika MENUTUP: panggil fungsi rekursif untuk menyembunyikan SEMUA level di bawahnya
+                hideAllDescendants(taskId);
+            }
         });
     });
 
-    // Fungsi rekursif: Sembunyikan semua child (dan child mereka)
-    function hideAllChildrenRecursively(childRows) {
-        childRows.forEach(row => {
-            row.classList.add('hidden');
-
-            // Cek apakah row ini punya anak sendiri (child dari anak)
-            const childId = row.getAttribute('data-childid');
-            const grandChildRows = document.querySelectorAll(`.task-row[data-parentid="${childId}"]`);
-            if (grandChildRows.length > 0) {
-                hideAllChildrenRecursively(grandChildRows);
-            }
-        });
-    }
-
-    // Fungsi rekursif: Tampilkan semua child (dan child mereka)
-    function showAllChildrenRecursively(childRows) {
-        childRows.forEach(row => {
-            row.classList.remove('hidden');
-
-            // Cari dan tampilkan anak dari anak
-            const childId = row.getAttribute('data-childid');
-            const grandChildRows = document.querySelectorAll(`.task-row[data-parentid="${childId}"]`);
-            if (grandChildRows.length > 0) {
-                showAllChildrenRecursively(grandChildRows);
-            }
-        });
-    }
 });
 </script>
 <script>

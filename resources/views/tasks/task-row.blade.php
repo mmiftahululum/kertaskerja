@@ -81,43 +81,57 @@ draggable="true">
 
     <!-- Tanggal Mulai -->
     <td class="px-1 py-1 text-xs text-gray-700">
-        {{ $task->planned_start ? $task->planned_start->format('d M Y') : '-' }}
+        {{ $task->planned_start ? $task->planned_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-xs">
-        @if($task->planned_end)
-            @php
-                $today = now()->startOfDay();
-                $plannedEnd = $task->planned_end->startOfDay();
-            @endphp
-            <span class="{{ $today > $plannedEnd ? 'text-red-600 font-medium' : 'text-gray-700' }}">
-                {{ $task->planned_end->format('d M Y') }}
-            </span>
-        @else
-            <span class="text-gray-400">-</span>
-        @endif
+    <td class="px-1 py-1 text-xs text-gray-700">
+        {{ $task->planned_end ? $task->planned_end->format('d M y') : '-' }}
     </td>
+
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    @if($task->planned_start && $task->planned_end)
+        @php
+            // Pastikan keduanya adalah objek Carbon untuk perhitungan
+            $start = \Carbon\Carbon::parse($task->planned_start);
+            $end = \Carbon\Carbon::parse($task->planned_end);
+            
+            // Hitung selisih hari, tambahkan 1 agar inklusif
+            // Contoh: 1 Jan - 1 Jan dihitung 1 hari
+            $mandays = $start->diffInDays($end) + 1;
+        @endphp
+        <span class="font-medium">{{ $mandays }} d</span>
+    @else
+        {{-- Jika salah satu tanggal kosong, tampilkan strip --}}
+        -
+    @endif
+</td>
 
      <!-- Tanggal Mulai -->
-    <td class="px-1 py-1 text-sm text-gray-700 text-xs">
-        {{ $task->actual_start ? $task->actual_start->format('d M Y') : '-' }}
+    <td class="px-1 py-1 text-gray-700 text-xs">
+        {{ $task->actual_start ? $task->actual_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-xs">
-        @if($task->actual_end)
-            @php
-                $today = now()->startOfDay();
-                $plannedEnd = $task->actual_end->startOfDay();
-            @endphp
-            <span class="{{ $today > $plannedEnd ? 'text-red-600 font-medium' : 'text-gray-700' }}">
-                {{ $task->actual_end->format('d M Y') }}
-            </span>
-        @else
-            <span class="text-gray-400">-</span>
-        @endif
+    <td class="px-1 py-1 text-gray-700 text-xs">
+          {{ $task->actual_end ? $task->actual_end->format('d M y') : '-' }}
     </td>
+
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    @if($task->actual_start && $task->actual_end)
+        @php
+            $start = \Carbon\Carbon::parse($task->actual_start);
+            $end = \Carbon\Carbon::parse($task->actual_end);
+            
+            // Hitung selisih hari, tambahkan 1 agar inklusif
+            $mandays = $start->diffInDays($end) + 1;
+        @endphp
+        <span class="font-medium">{{ $mandays }} d</span>
+    @else
+        {{-- Jika salah satu tanggal kosong, tampilkan strip --}}
+        -
+    @endif
+</td>
 
 
     <td class="px-1 py-1 text-xs text-gray-700">
