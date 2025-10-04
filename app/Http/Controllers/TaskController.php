@@ -122,20 +122,7 @@ public function index(Request $request)
         $validTasksQuery->where(fn($q) => $operator === '=' ? $q->whereIn('current_status_id', $statusIds) : $q->whereNotIn('current_status_id', $statusIds));
     }
     
-    // if($filterMyTask == "1"){
-    //     $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $userEmail))->pluck('id')->toArray();
-    //     if (!empty($assignedTaskIds)) {
-    //         $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
-    //         $descendantIds = $this->collectDescendantIds($assignedTaskIds);
-    //         $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
-    //         $validTasksQuery->whereIn('id', $relevantTaskIds);
-    //     } else {
-    //         $validTasksQuery->whereRaw('0 = 1');
-    //     }
-    // }
-    
-    
-    $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
+    $allValidTasks = $validTasksQuery->orderBy('order_column', 'asc')->orderBy('planned_start', 'ASC')->get();
     $taskTree = $this->buildTaskTree($allValidTasks);
     
     $tasksForDisplay = collect();
@@ -329,7 +316,10 @@ private function buildTaskTree($tasks)
                 ->withInput();
         }
 
-        $task = Task::create($request->except('assignments'));
+        $taskData = $request->except(['assignments']);
+        $maxOrder = Task::where('parent_id', $request->parent_id)->max('order_column');
+        $taskData['order_column'] = $maxOrder + 1;
+        $task = Task::create($taskData);
 
          if ($request->has('assignments') && is_array($request->assignments)) {
             // map daftar id menjadi format id => [pivot data]
@@ -355,7 +345,6 @@ private function buildTaskTree($tasks)
                 }
             }
         }
-
         
           TaskStatusLog::create([
             'task_id'  => $task->id,
@@ -370,6 +359,47 @@ private function buildTaskTree($tasks)
             ->with('success', 'Tugas berhasil dibuat');
     }
 
+    public function reparent(Request $request)
+{
+    $request->validate([
+        'task_id' => 'required|exists:tasks,id',
+        'parent_id' => 'nullable|exists:tasks,id', // Parent bisa null (jadi root task)
+    ]);
+
+    $task = Task::find($request->task_id);
+    
+    // Cek agar task tidak menjadi parent dari dirinya sendiri
+    if ($task->id == $request->parent_id) {
+        return response()->json(['status' => 'error', 'message' => 'Task tidak bisa menjadi parent dari dirinya sendiri.'], 422);
+    }
+
+    $task->parent_id = $request->parent_id;
+
+    // Set order_column ke posisi terakhir di dalam parent baru
+    $maxOrder = Task::where('parent_id', $request->parent_id)->max('order_column');
+    $task->order_column = $maxOrder + 1;
+    
+    $task->save();
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Parent task berhasil diubah.'
+    ], 200);
+}
+
+public function reorder(Request $request)
+{
+    $request->validate([
+        'ids' => 'required|array'
+    ]);
+
+    foreach ($request->ids as $index => $id) {
+        // Update order_column sesuai urutan baru dari array
+        Task::where('id', $id)->update(['order_column' => $index]);
+    }
+
+    return response()->json(['status' => 'success'], 200);
+}
 
     private function getTaskPath(Task $task): string
     {

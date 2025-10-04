@@ -207,9 +207,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                   <th colspan="2" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Judul Task
-        </th>
+                                   <th colspan="3" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Task</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2">Status Saat Ini</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan start</th>
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan End</th>
@@ -224,7 +222,7 @@
                                     <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/12">Komentar Terakhir</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="tasks-container">
+                            <tbody class="bg-white divide-y divide-gray-200"  id="task-list">
                                 @foreach($tasks as $task)
                                         @include('tasks.task-row', ['task' => $task, 'level' => 0, 'childStatuses' => $childStatuses])
                                 @endforeach
@@ -429,6 +427,7 @@
 
 </x-app-layout>
 
+ <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <!-- Styles and Scripts -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -483,7 +482,37 @@
 
 </style>
 
+ <style>
+        /* Style untuk elemen yang sedang di-drag */
+        .sortable-drag {
+            opacity: 0.7;
+            background: #f0f8ff; /* Warna biru muda agar menonjol */
+        }
+
+        /* Style untuk placeholder (bayangan) di posisi baru */
+        .ghost-style {
+            opacity: 0.4;
+            background: #e6e6e6;
+            border: 1px dashed #999;
+        }
+        .ghost-style > td {
+            visibility: hidden; /* Sembunyikan konten placeholder */
+        }
+
+        /* Style untuk placeholder saat akan menjadi child (reparenting) */
+        .ghost-indented {
+            background-color: #e6fffa; /* Warna hijau muda */
+            border-left: 4px solid #38b2ac; /* Garis hijau di kiri */
+        }
+        .ghost-indented > td {
+            visibility: hidden; /* Sembunyikan konten placeholder */
+            padding-left: 40px !important;
+        }
+    </style>
+
 <style>
+
+    
     /* Styling untuk Timeline */
 .timeline {
     position: relative;
@@ -563,6 +592,132 @@
     margin-top: 5px;
 }
 </style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const taskList = document.getElementById('task-list');
+    if (!taskList) return; // Hentikan jika elemen tidak ditemukan
+
+    let isReparenting = false; // Flag untuk menandai aksi reparent
+
+    new Sortable(taskList, {
+        handle: '.drag-handle',
+        animation: 150,
+        group: 'tasks',
+        ghostClass: 'ghost-style', // Class standar untuk placeholder
+
+       onMove: function (evt) {
+    const targetEl = evt.related; // Ini adalah elemen <tr> yang sedang dilewati kursor
+
+    // Pengecekan 'if' di awal ini tidak perlu dan bisa dihapus.
+    // Opsi 'handle' sudah memastikan proses drag dimulai dari handle yang benar.
+
+    // Ambil elemen placeholder (ghost) yang sedang aktif
+    const ghostEl = evt.from.querySelector('.ghost-style, .ghost-indented');
+    if (!ghostEl){
+        console.log("ghostEl tidak ditemukan"); // Untuk debugging jika elemen ghost tidak ada
+        return; // Hentikan jika ghost tidak ditemukan
+    }
+
+    const rect = targetEl.getBoundingClientRect();
+    const offsetX = evt.originalEvent.clientX - rect.left;
+    
+    // Logika untuk mengubah style placeholder
+    if (offsetX > 40) {
+        isReparenting = true;
+        ghostEl.classList.add('ghost-indented');
+        ghostEl.classList.remove('ghost-style');
+    } else {
+        isReparenting = false;
+        ghostEl.classList.remove('ghost-indented');
+        ghostEl.classList.add('ghost-style');
+    }
+},
+
+        onEnd: function (evt) {
+            // Pastikan sortable instance ada
+            if (evt.from.sortable) {
+                // Selalu reset style setelah drop
+                evt.from.sortable.options.ghostClass = 'ghost-style';
+            }
+            
+            const draggedEl = evt.item;
+            const taskId = draggedEl.dataset.taskId;
+
+            if (!taskId) return; // Jangan lakukan apa-apa jika tidak ada ID
+
+            if (isReparenting) {
+                // --- AKSI REPARENT ---
+                // Dapatkan elemen di bawah item yang di-drop. Jika tidak ada, berarti di drop di paling bawah
+                const newParentEl = evt.to.children[evt.newIndex - 1];
+                const newParentId = newParentEl ? newParentEl.dataset.taskId : null;
+
+                // Pastikan tidak drop ke dirinya sendiri
+                if (taskId !== newParentId) {
+                    handleReparent(taskId, newParentId);
+                } else {
+                    // Jika drop ke dirinya sendiri, refresh halaman untuk reset
+                    window.location.reload();
+                }
+            } else {
+                // --- AKSI REORDER ---
+                // Temukan parent ID dari elemen yang di-drag
+                const parentId = draggedEl.dataset.parentId || 'root';
+                
+                // Kumpulkan semua sibling (elemen lain dengan parent ID yang sama)
+                const siblingIds = Array.from(evt.to.children)
+                    .filter(el => (el.dataset.parentId || 'root') === parentId)
+                    .map(row => row.dataset.taskId);
+                    
+                handleReorder(siblingIds);
+            }
+
+            // Reset flag
+            isReparenting = false;
+        }
+    });
+
+    function handleReorder(ids) {
+        if (ids.length === 0) return;
+
+        fetch('{{ route("tasks.reorder") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ ids: ids })
+        }).then(response => {
+            window.location.reload();
+            if (!response.ok) {
+                 // Muat ulang halaman jika ada error untuk mencegah tampilan yang salah
+                 window.location.reload();
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            window.location.reload();
+        });
+    }
+
+    function handleReparent(taskId, parentId) {
+        fetch('{{ route("tasks.reparent") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ task_id: taskId, parent_id: parentId })
+        }).then(response => {
+            // Apapun hasilnya (sukses atau gagal), muat ulang halaman untuk konsistensi
+            window.location.reload(); 
+        }).catch(error => {
+            console.error('Error:', error);
+            window.location.reload();
+        });
+    }
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1139,106 +1294,106 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // resources/views/tasks/index.blade.php (di dalam @push('scripts'))
 
-document.addEventListener('DOMContentLoaded', function () {
-    const taskContainer = document.getElementById('tasks-container'); // Ambil tbody
-    const taskRows = document.querySelectorAll('.task-row');
+// document.addEventListener('DOMContentLoaded', function () {
+//     const taskContainer = document.getElementById('tasks-container'); // Ambil tbody
+//     const taskRows = document.querySelectorAll('.task-row');
 
-    // --- Event Listener untuk Setiap Baris (TR) ---
-    taskRows.forEach(row => {
-        // Saat mulai men-drag sebuah baris
-        row.addEventListener('dragstart', (e) => {
-            e.target.classList.add('opacity-50', 'bg-yellow-100');
-            e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
-            e.dataTransfer.effectAllowed = 'move';
-        });
+//     // --- Event Listener untuk Setiap Baris (TR) ---
+//     taskRows.forEach(row => {
+//         // Saat mulai men-drag sebuah baris
+//         row.addEventListener('dragstart', (e) => {
+//             e.target.classList.add('opacity-50', 'bg-yellow-100');
+//             e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
+//             e.dataTransfer.effectAllowed = 'move';
+//         });
 
-        // Saat baris yang di-drag berada DI ATAS baris lain (memberi highlight)
-        row.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Izinkan drop di atas baris ini
-            e.target.closest('.task-row').classList.add('bg-blue-100');
-        });
+//         // Saat baris yang di-drag berada DI ATAS baris lain (memberi highlight)
+//         row.addEventListener('dragover', (e) => {
+//             e.preventDefault(); // Izinkan drop di atas baris ini
+//             e.target.closest('.task-row').classList.add('bg-blue-100');
+//         });
 
-        // Saat baris yang di-drag meninggalkan area baris lain
-        row.addEventListener('dragleave', (e) => {
-            e.target.closest('.task-row').classList.remove('bg-blue-100');
-        });
+//         // Saat baris yang di-drag meninggalkan area baris lain
+//         row.addEventListener('dragleave', (e) => {
+//             e.target.closest('.task-row').classList.remove('bg-blue-100');
+//         });
 
-        // Saat baris yang di-drag DILEPASKAN di atas baris lain
-        row.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // (PENTING) Hentikan event agar tidak 'bubble up' ke tbody
-            e.target.closest('.task-row').classList.remove('bg-blue-100');
+//         // Saat baris yang di-drag DILEPASKAN di atas baris lain
+//         row.addEventListener('drop', async (e) => {
+//             e.preventDefault();
+//             e.stopPropagation(); // (PENTING) Hentikan event agar tidak 'bubble up' ke tbody
+//             e.target.closest('.task-row').classList.remove('bg-blue-100');
 
-            const draggedTaskId = e.dataTransfer.getData('text/plain');
-            const targetTaskId = e.target.closest('.task-row').dataset.taskId;
+//             const draggedTaskId = e.dataTransfer.getData('text/plain');
+//             const targetTaskId = e.target.closest('.task-row').dataset.taskId;
 
-            // Jangan lakukan apa-apa jika dilepas di atas dirinya sendiri
-            if (draggedTaskId === targetTaskId) return;
+//             // Jangan lakukan apa-apa jika dilepas di atas dirinya sendiri
+//             if (draggedTaskId === targetTaskId) return;
 
-            await updateTaskParent(draggedTaskId, targetTaskId);
-        });
+//             await updateTaskParent(draggedTaskId, targetTaskId);
+//         });
 
-        // Saat proses drag selesai
-        row.addEventListener('dragend', (e) => {
-            e.target.classList.remove('opacity-50', 'bg-yellow-100');
-        });
-    });
+//         // Saat proses drag selesai
+//         row.addEventListener('dragend', (e) => {
+//             e.target.classList.remove('opacity-50', 'bg-yellow-100');
+//         });
+//     });
 
-    // --- (BARU) Event Listener untuk Container Utama (TBODY) ---
-    if (taskContainer) {
-        // Saat baris yang di-drag berada DI ATAS area tbody (di antara baris)
-        taskContainer.addEventListener('dragover', (e) => {
-            e.preventDefault(); // (SANGAT PENTING) Izinkan drop di area ini
-            // Ini akan menghilangkan ikon "stop"
-        });
+//     // --- (BARU) Event Listener untuk Container Utama (TBODY) ---
+//     if (taskContainer) {
+//         // Saat baris yang di-drag berada DI ATAS area tbody (di antara baris)
+//         taskContainer.addEventListener('dragover', (e) => {
+//             e.preventDefault(); // (SANGAT PENTING) Izinkan drop di area ini
+//             // Ini akan menghilangkan ikon "stop"
+//         });
 
-        // Saat baris yang di-drag DILEPASKAN di area tbody (bukan di atas baris lain)
-        taskContainer.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            const draggedTaskId = e.dataTransfer.getData('text/plain');
+//         // Saat baris yang di-drag DILEPASKAN di area tbody (bukan di atas baris lain)
+//         taskContainer.addEventListener('drop', async (e) => {
+//             e.preventDefault();
+//             const draggedTaskId = e.dataTransfer.getData('text/plain');
  
-            // Melepas di area utama berarti menjadikannya parent level 0 (parent_id = null)
-            await updateTaskParent(draggedTaskId, null);
-        });
-    }
+//             // Melepas di area utama berarti menjadikannya parent level 0 (parent_id = null)
+//             await updateTaskParent(draggedTaskId, null);
+//         });
+//     }
 
-    // Fungsi untuk mengirim perubahan ke server (tetap sama)
-     async function updateTaskParent(taskId, newParentId) {
-        // Tampilkan loading indicator (opsional, tapi bagus untuk UX)
-        document.body.style.cursor = 'wait';
+//     // Fungsi untuk mengirim perubahan ke server (tetap sama)
+//      async function updateTaskParent(taskId, newParentId) {
+//         // Tampilkan loading indicator (opsional, tapi bagus untuk UX)
+//         document.body.style.cursor = 'wait';
 
-        try {
-            const response = await fetch(`/tasks/${taskId}/set-parent`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // Mengambil token CSRF dari meta tag di layout Anda
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    parent_id: newParentId
-                })
-            });
+//         try {
+//             const response = await fetch(`/tasks/${taskId}/set-parent`, {
+//                 method: 'PATCH',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                     // Mengambil token CSRF dari meta tag di layout Anda
+//                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+//                 },
+//                 body: JSON.stringify({
+//                     parent_id: newParentId
+//                 })
+//             });
 
-            // Ubah kembali cursor setelah request selesai
-            document.body.style.cursor = 'default';
+//             // Ubah kembali cursor setelah request selesai
+//             document.body.style.cursor = 'default';
 
-            if (response.ok) {
-                // Jika berhasil (status 200-299), muat ulang halaman untuk melihat struktur baru.
-                // Ini adalah cara paling sederhana dan andal.
-                window.location.reload();
-            } else {
-                // Jika ada error validasi dari server (status 422) atau error lainnya.
-                const data = await response.json();
-                alert('Gagal memindahkan tugas: ' + (data.error || 'Terjadi kesalahan di server.'));
-            }
-        } catch (error) {
-            document.body.style.cursor = 'default';
-            console.error('Error saat mengirim request:', error);
-            // alert('Gagal terhubung ke server. Silakan periksa koneksi Anda.');
-        }
-    }
-});
+//             if (response.ok) {
+//                 // Jika berhasil (status 200-299), muat ulang halaman untuk melihat struktur baru.
+//                 // Ini adalah cara paling sederhana dan andal.
+//                 window.location.reload();
+//             } else {
+//                 // Jika ada error validasi dari server (status 422) atau error lainnya.
+//                 const data = await response.json();
+//                 alert('Gagal memindahkan tugas: ' + (data.error || 'Terjadi kesalahan di server.'));
+//             }
+//         } catch (error) {
+//             document.body.style.cursor = 'default';
+//             console.error('Error saat mengirim request:', error);
+//             // alert('Gagal terhubung ke server. Silakan periksa koneksi Anda.');
+//         }
+//     }
+// });
     
     document.addEventListener('DOMContentLoaded', function () {
         // --- Bagian Pengaturan Elemen ---

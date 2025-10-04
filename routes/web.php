@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('head-statuses', HeadStatusController::class);
     Route::resource('child-statuses', ChildStatusController::class);
     Route::resource('tasks', TaskController::class);
+    Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder'); 
+    Route::post('tasks/reparent', [TaskController::class, 'reparent'])->name('tasks.reparent');
 
     Route::patch('/tasks/{task}/set-parent', [TaskController::class, 'setParent'])->name('tasks.set-parent');
     Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);

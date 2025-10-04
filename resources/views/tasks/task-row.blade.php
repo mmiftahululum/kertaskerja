@@ -8,10 +8,17 @@ data-edit-url="{{ route('tasks.edit', $task) }}"
 data-delete-url="{{ route('tasks.destroy', $task) }}"
  data-is-assigned-to-me="{{ $isAssignedToMe ? 'true' : 'false' }}" 
  data-parentid="{{ $task->parent_id }}" 
+ data-parent-id="{{ $task->parent_id ?? 'root' }}"
  data-childid="{{ $task->id }}" 
  data-task-id="{{ $task->id }}"
-data-level="{{ $level }}"
-draggable="true">
+ data-level="{{ $level }}"
+ x-data="{ open: false }">
+
+<td class="px-2 py-2 whitespace-nowrap text-center drag-handle cursor-move">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+    </td>
 
     <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 1 }}px">
            <!-- Icon expand/collapse hanya jika ada child -->
