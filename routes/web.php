@@ -70,13 +70,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/karyawans/update/{karyawan}', [KaryawanController::class, 'update'])->name('karyawans.update');
     Route::post('/karyawans/destroy/{karyawan}', [KaryawanController::class, 'destroy'])->name('karyawans.destroy');
 
-    Route::get('/apps', [MasterAppController::class, 'index'])->name('masterapps.index');
-    Route::get('/apps/create', [MasterAppController::class, 'create'])->name('masterapps.create');
-    Route::post('/apps/store', [MasterAppController::class, 'store'])->name('masterapps.store');
-    Route::get('/apps/show/{id}', [MasterAppController::class, 'show'])->name('masterapps.show');
-    Route::get('/apps/edit/{id}', [MasterAppController::class, 'edit'])->name('masterapps.edit');
-    Route::put('/apps/update/{id}', [MasterAppController::class, 'update'])->name('masterapps.update');
-    Route::get('/apps/destroy/{id}', [MasterAppController::class, 'destroy'])->name('masterapps.destroy');
+    Route::get('/aplikasi', [MasterAppController::class, 'index'])->name('masterapps.index');
+    Route::get('/aplikasi/create', [MasterAppController::class, 'create'])->name('masterapps.create');
+    Route::post('/aplikasi/store', [MasterAppController::class, 'store'])->name('masterapps.store');
+    Route::get('/aplikasi/show/{id}', [MasterAppController::class, 'show'])->name('masterapps.show');
+    Route::get('/aplikasi/edit/{id}', [MasterAppController::class, 'edit'])->name('masterapps.edit');
+    Route::put('/aplikasi/update/{id}', [MasterAppController::class, 'update'])->name('masterapps.update');
+    Route::get('/aplikasi/destroy/{id}', [MasterAppController::class, 'destroy'])->name('masterapps.destroy');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
