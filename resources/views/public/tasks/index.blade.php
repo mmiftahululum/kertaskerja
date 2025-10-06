@@ -77,7 +77,7 @@
             </button>
 
             <!-- Reset Button -->
-            <a href="{{ route('tasks.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded-md text-sm">
+            <a href="{{ route('public.tasks.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-1 rounded-md text-sm">
                 Reset
             </a>
 

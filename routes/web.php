@@ -44,7 +44,7 @@ Route::get('/', function () {
 });
 Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
 Route::get('/pub/tasks', [TaskPublicController::class, 'index'])->name('public.tasks.index');
-// Route::get('/public/tasks/view/{task}', [TaskPublicController::class, 'show'])->name('tasks.view');
+Route::get('/public/tasks/view/{task}', [TaskPublicController::class, 'show'])->name('public.tasks.view');
 
 
 Route::get('/dashboard', function () {

@@ -242,4 +242,37 @@ private function buildTaskTree($tasks)
 
 
 
+
+    public function show($id)
+    {
+        // Query untuk mengambil task tetap sama
+        $task = Task::with([
+            'parent',
+            'children',
+            'headStatus',
+            'currentStatus',
+            'assignments', // Pastikan relasi ini benar
+            'files',
+            'comments.user',
+            'links',
+        ])->find($id);
+
+        if (!$task) {
+            return redirect()->route('tasks.index')
+                ->with('error', 'Tugas tidak ditemukan');
+        }
+
+        // (BARU) Logika untuk mengumpulkan breadcrumbs
+        $breadcrumbs = collect();
+        $currentParent = $task->parent;
+        while ($currentParent) {
+            $breadcrumbs->prepend($currentParent); // prepend() untuk urutan dari atas ke bawah
+            $currentParent = $currentParent->parent;
+        }
+
+        // (DIUBAH) Kirim variabel $breadcrumbs ke view
+        return view('public.tasks.view', compact('task', 'breadcrumbs'));
+    }
+
+
 }
