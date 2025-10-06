@@ -11,9 +11,15 @@
                 <div class="p-4 sm:p-6">
                    <div class="items-center justify-between mb-4">
     <div class="text-lg font-bold text-gray-900 mb-4center" style="font-size:25px;"> 
-       DAFTAR TASKS
+       <a href="{{ url('') }}" 
+   class="inline-block rounded-md border border-indigo-600 bg-indigo-600 px-6 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring">
+    HOME
+</a>
+
+DAFTAR TASKS
     </div>
     
+
     <div class="flex flex-wrap items-center gap-4 mt-4">
         <!-- Form Filter -->
         <form method="GET" action="" id="filterForm" class="flex flex-wrap items-center gap-2">
