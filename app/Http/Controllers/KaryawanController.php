@@ -30,11 +30,15 @@ class KaryawanController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+       $data = $request->validate([
             'nama_karyawan' => 'required|string|max:255',
+            'nickname' => 'nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:karyawans,email',
+            'phone_no' => 'nullable|string|max:20',
             'username_git' => 'required|string|max:255|unique:karyawans,username_git',
             'username_vpn' => 'nullable|string|max:255',
             'tanggal_berakhir_kontrak' => 'nullable|date',
+            'sebagai' => 'nullable|string',
         ]);
 
         Karyawan::create($data);
@@ -55,11 +59,15 @@ class KaryawanController extends Controller
 
     public function update(Request $request, Karyawan $karyawan)
     {
-        $data = $request->validate([
+      $data = $request->validate([
             'nama_karyawan' => 'required|string|max:255',
+            'nickname' => 'nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:karyawans,email,' . $karyawan->id,
+            'phone_no' => 'nullable|string|max:20',
             'username_git' => 'required|string|max:255|unique:karyawans,username_git,' . $karyawan->id,
             'username_vpn' => 'nullable|string|max:255',
             'tanggal_berakhir_kontrak' => 'nullable|date',
+            'sebagai' => 'nullable|string',
         ]);
 
         $karyawan->update($data);

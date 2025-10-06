@@ -31,8 +31,11 @@ class ChildStatusController extends Controller
 
         ChildStatus::create($request->all());
 
-        return redirect()->route('child-statuses.index')
-            ->with('success', 'Child Status berhasil dibuat.');
+        // return redirect()->route('child-statuses.index')
+        //     ->with('success', 'Child Status berhasil dibuat.');
+
+              return redirect()->route('head-statuses.index')
+            ->with('success', 'Child Status berhasil diupdate.');
     }
 
     public function show(ChildStatus $childStatus)
@@ -58,7 +61,7 @@ class ChildStatusController extends Controller
 
         $childStatus->update($request->all());
 
-        return redirect()->route('child-statuses.index')
+          return redirect()->route('head-statuses.index')
             ->with('success', 'Child Status berhasil diupdate.');
     }
 
@@ -66,7 +69,10 @@ class ChildStatusController extends Controller
     {
         $childStatus->delete();
 
-        return redirect()->route('child-statuses.index')
+           return redirect()->route('head-statuses.index')
             ->with('success', 'Child Status berhasil dihapus.');
+
+        // return redirect()->route('child-statuses.index')
+        //     ->with('success', 'Child Status berhasil dihapus.');
     }
 }

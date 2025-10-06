@@ -9,7 +9,7 @@
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-base font-medium text-gray-900">Form Tambah Child Status</h3>
-                    <a href="{{ route('child-statuses.index') }}" class="text-sm text-gray-600 hover:underline">Kembali</a>
+                    <a href="{{ route('head-statuses.index') }}" class="text-sm text-gray-600 hover:underline">Kembali</a>
                 </div>
 
                 @if($errors->any())

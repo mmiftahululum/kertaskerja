@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TaskFile; 
+use Illuminate\Support\Facades\Storage; 
 use App\Models\Task;
 use App\Models\Karyawan;
 use App\Models\ChildStatus;
+use App\Models\TaskStatusLog;
 use App\Models\HeadStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;          // <-- ditambah
+use Illuminate\Support\Collection;   
 
 class TaskController extends Controller
 {
@@ -16,115 +21,204 @@ class TaskController extends Controller
      *
      * @return \Illuminate\View\View
      */
- 
-    public function index(Request $request)
-{
 
-// Ambil parameter filter dari request
-  $filterClose = $request->get('filter_close', '0');
+
+public function index(Request $request)
+{
+    // Ambil semua parameter filter
+    $filterClose = $request->get('filter_close', '0');
+    $filterMyTask  = $request->get('filter_mytask', '0');
     $operator = $request->get('operator', '');
+    $filterAssignedTo = $request->get('filter_assigned_to', '');
     $statusIds = $request->get('status_ids', []);
     $searchQuery = $request->get('q', '');
+    $searchIds = $request->get('search_ids', []); // (DIUBAH) Menerima array ID
 
-
-    if ($request->has('filter_close') && $request->filter_close == '1') {
-        // Tampilkan semua task (parent saja, children akan di-load di view)
-        $query = Task::with([
-            'parent',
-            'headStatus',
-            'currentStatus', 
-            'assignments',
-            'files',
-            'comments' => function ($query) {
-                $query->latest()->take(20);
-            },
-            'comments.user'
-        ])
-        ->whereNull('parent_id')
-        ->orderBy('planned_start', 'ASC');
-
-        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
-            if ($operator === '=') {
-                $query->whereIn('current_status_id', $statusIds);
-            } elseif ($operator === '!=') {
-                $query->whereNotIn('current_status_id', $statusIds);
-            }
-        }
-
-        // Terapkan filter search jika ada
-        if (!empty($searchQuery)) {
-            $query->where('title', 'LIKE', '%' . $searchQuery . '%');
-        }
-
-        $tasks = $query->paginate(100);
-
-    } else {
-        // Ambil semua tasks yang valid (status bukan CLOSE) dalam satu query
-        $validTasksQuery = Task::with([
-            'parent',
-            'headStatus',
-            'currentStatus',
-            'assignments', 
-            'files',
-            'comments' => function ($query) {
-                $query->latest()->take(20);
-            },
-            'comments.user'
-        ])
-        ->whereHas('currentStatus', function ($q) {
-            $q->where('status_code', '<>', 'CLOSE');
-        });
-
-        // Terapkan filter operator dan status jika ada
-        if (!empty($operator) && !empty($statusIds) && is_array($statusIds)) {
-            if ($operator === '=') {
-                $validTasksQuery->whereIn('current_status_id', $statusIds);
-            } elseif ($operator === '!=') {
-                $validTasksQuery->whereNotIn('current_status_id', $statusIds);
-            }
-        }
-
-        // Terapkan filter search jika ada
-        if (!empty($searchQuery)) {
-            $validTasksQuery->where('title', 'LIKE', '%' . $searchQuery . '%');
-        }
-
-        $allValidTasks = $validTasksQuery->orderBy('planned_start', 'ASC')->get();
-
-        // Buat tree structure dari flat collection
-        $taskTree = $this->buildTaskTree($allValidTasks);
-        
-        // Convert ke paginated result (ambil parent tasks saja untuk pagination)
-        $parentTasks = $taskTree->where('parent_id', null);
-        
-        // Manual pagination
-        $page = $request->get('page', 1);
-        $perPage = 100;
-        $offset = ($page - 1) * $perPage;
-        
-        $paginatedParents = $parentTasks->slice($offset, $perPage)->values();
-        
-        $tasks = new \Illuminate\Pagination\LengthAwarePaginator(
-            $paginatedParents,
-            $parentTasks->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+    $searchTitles = [];
+    // **LOGIKA BARU**: Jika ada ID dari combobox, ambil semua judulnya
+    if (!empty($searchIds)) {
+        $searchTitles = Task::whereIn('id', $searchIds)->pluck('title')->toArray();
     }
+
+    $userId = Auth::id();
+    $userEmail = Auth::user()->email ?? '';
+    
+    // Query dasar
+    $validTasksQuery = Task::with([
+        'parent', 'headStatus', 'currentStatus', 'assignments', 'files',
+        'comments' => fn($q) => $q->latest()->take(20),
+        'comments.user'
+    ]);
+
+    $matchingTaskIds = [];
+
+    // **LOGIKA BARU**: Menggabungkan pencarian dari input teks dan combobox
+    if (!empty($searchQuery) || !empty($searchTitles)) {
+        $matchingTaskIds = Task::query()
+            ->where(function ($query) use ($searchQuery, $searchTitles) {
+                // Pencarian dari input teks
+                if (!empty($searchQuery)) {
+                    $query->where('title', 'LIKE', '%' . $searchQuery . '%');
+                }
+                // Pencarian dari combobox (multiple)
+                if (!empty($searchTitles)) {
+                    foreach ($searchTitles as $title) {
+                        $query->orWhere('title', 'LIKE', '%' . $title . '%');
+                    }
+                }
+            })
+            ->pluck('id')->toArray();
+
+        if (!empty($matchingTaskIds)) {
+            $descendantIds = $this->collectDescendantIds($matchingTaskIds);
+            $allRelevantIds = array_unique(array_merge($matchingTaskIds, $descendantIds));
+            $validTasksQuery->whereIn('id', $allRelevantIds);
+        } else {
+            $validTasksQuery->whereRaw('0 = 1');
+        }
+    }
+
+
+      if($filterMyTask == "1" || $filterAssignedTo){
+
+        $emailToFilter = '';
+        if (!empty($filterAssignedTo)) {
+            $assignedEmployee = Karyawan::find($filterAssignedTo);
+            if ($assignedEmployee) {
+                $emailToFilter = $assignedEmployee->email;
+            }
+        } elseif ($filterMyTask == '1') {
+            $emailToFilter = $userEmail;
+        }
+
+        $assignedTaskIds = Task::whereHas('assignments', fn($q) => $q->where('email', $emailToFilter))->pluck('id')->toArray();
+        
+        // 1. Ambil semua ID task yang di-assign ke user yang sedang login
+      
+
+        // 2. Jika user punya assignment
+        if (!empty($assignedTaskIds)) {
+            // 3. Ambil semua parent dari task-task tersebut (untuk konteks)
+            $ancestorIds = $this->collectAncestorIds($assignedTaskIds);
+
+            // 4. Ambil semua child dari task-task tersebut (sub-tugas)
+            $descendantIds = $this->collectDescendantIds($assignedTaskIds);
+            
+            // 5. Gabungkan semua ID yang relevan (assigned, parents, children)
+            $relevantTaskIds = array_unique(array_merge($assignedTaskIds, $ancestorIds, $descendantIds));
+            
+            // 6. Terapkan ke query utama
+            $validTasksQuery->whereIn('id', $relevantTaskIds);
+        } else {
+            // Jika user tidak punya assignment sama sekali, jangan tampilkan apa-apa
+            $validTasksQuery->whereRaw('0 = 1');
+        }
+    }
+  
+    // ... Sisa filter lainnya tetap sama ...
+    if (!$request->has('filter_close') || $request->filter_close != '1') {
+        $validTasksQuery->whereHas('currentStatus', fn($q) => $q->where('status_code', '<>', 'CLOSE'));
+    }
+
+    if (!empty($operator) && !empty($statusIds)) {
+        $validTasksQuery->where(fn($q) => $operator === '=' ? $q->whereIn('current_status_id', $statusIds) : $q->whereNotIn('current_status_id', $statusIds));
+    }
+    
+    $allValidTasks = $validTasksQuery->orderBy('order_column', 'asc')->orderBy('planned_start', 'ASC')->get();
+    $taskTree = $this->buildTaskTree($allValidTasks);
+    
+    $tasksForDisplay = collect();
+    if (!empty($searchQuery) || !empty($searchTitles)) {
+        $tasksForDisplay = $taskTree->whereIn('id', $matchingTaskIds);
+    } else {
+        $tasksForDisplay = $taskTree->where('parent_id', null);
+    }
+    
+    // ... Sisa kode pagination dan return view tetap sama ...
+    $page = $request->get('page', 1);
+    $perPage = 100;
+    $offset = ($page - 1) * $perPage;
+    $paginatedTasks = $tasksForDisplay->slice($offset, $perPage)->values();
+    
+    $tasks = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginatedTasks,
+        $tasksForDisplay->count(),
+        $perPage,
+        $page,
+        ['path' => request()->url(), 'query' => request()->query()]
+    );
+    
+    $searchableTasks = Task::whereHas('currentStatus', fn($q) => $q->where('status_code', '<>', 'CLOSE'))
+                            ->orderBy('title')
+                            ->get(['id', 'title']);
 
     $childStatuses = ChildStatus::get();
     $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
-    $employees = Karyawan::select('id', 'nama_karyawan')->get();
+    $employees = Karyawan::select('id', 'nama_karyawan', 'nickname')->get();
+    $currentKaryawan = Karyawan::where('email', $userEmail)->first();
+    $currentKaryawanId = $currentKaryawan ? $currentKaryawan->id : null; 
+    $bookmarks = Auth::user()->taskFilterBookmarks()->orderBy('name')->get();
 
-    return view('tasks.index', compact('employees', 'tasks', 'childStatuses', 'headStatuses'))
+    return view('tasks.index', compact(
+            'employees', 'tasks', 'childStatuses', 'headStatuses', 'currentKaryawanId',
+            'searchableTasks','bookmarks'
+        ))
         ->with([
             'filter_close' => $request->filter_close ?? null,
+            'filter_mytask' => $request->filter_mytask ?? null,
             'selected_operator' => $operator,
             'selected_status_ids' => $statusIds,
             'search_query' => $searchQuery
         ]);
 }
+
+  /* ------------------------------------------------------------------
+     *  Helper: mengumpulkan semua ancestor (parent‑parent‑…) dari
+     *          sekumpulan task ID.
+     * ------------------------------------------------------------------ */
+    private function collectAncestorIds(array $taskIds): array
+    {
+        $ancestors = [];
+
+        foreach ($taskIds as $id) {
+            $task = Task::find($id);
+            while ($task && $task->parent_id) {
+                $parentId = $task->parent_id;
+                if (!in_array($parentId, $ancestors)) {
+                    $ancestors[] = $parentId;
+                }
+                $task = Task::find($parentId); // naik satu level lagi
+            }
+        }
+
+        return $ancestors;
+    }
+
+    /* ------------------------------------------------------------------
+     *  Helper: mengumpulkan semua descendant (children‑children‑…) dari
+     *          sekumpulan task ID (rekursif).
+     * ------------------------------------------------------------------ */
+    private function collectDescendantIds(array $taskIds): array
+    {
+        $descendants = [];
+
+        $stack = $taskIds; // gunakan stack untuk iterasi DFS
+
+        while (!empty($stack)) {
+            $currentId = array_pop($stack);
+            $children  = Task::where('parent_id', $currentId)->pluck('id')->toArray();
+
+            foreach ($children as $childId) {
+                if (!in_array($childId, $descendants)) {
+                    $descendants[] = $childId;
+                    $stack[] = $childId; // eksplorasi deeper level
+                }
+            }
+        }
+
+        return $descendants;
+    }
+
 
 /**
  * Build task tree dari flat collection
@@ -152,16 +246,20 @@ private function buildTaskTree($tasks)
      * @param int $id
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
+   // app/Http/Controllers/TaskController.php
+
     public function show($id)
     {
+        // Query untuk mengambil task tetap sama
         $task = Task::with([
             'parent',
             'children',
             'headStatus',
             'currentStatus',
-            'assignments.karyawan',
+            'assignments', // Pastikan relasi ini benar
             'files',
             'comments.user',
+            'links',
         ])->find($id);
 
         if (!$task) {
@@ -169,7 +267,16 @@ private function buildTaskTree($tasks)
                 ->with('error', 'Tugas tidak ditemukan');
         }
 
-        return view('tasks.show', compact('task'));
+        // (BARU) Logika untuk mengumpulkan breadcrumbs
+        $breadcrumbs = collect();
+        $currentParent = $task->parent;
+        while ($currentParent) {
+            $breadcrumbs->prepend($currentParent); // prepend() untuk urutan dari atas ke bawah
+            $currentParent = $currentParent->parent;
+        }
+
+        // (DIUBAH) Kirim variabel $breadcrumbs ke view
+        return view('tasks.view', compact('task', 'breadcrumbs'));
     }
 
     /**
@@ -202,7 +309,12 @@ private function buildTaskTree($tasks)
             'planned_start' => 'nullable|date',
             'planned_end' => 'nullable|date|after_or_equal:planned_start',
             'progress_percent' => 'nullable|integer|min:0|max:100',
+            'files.*' => 'file|max:10240',
         ]);
+
+          if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
 
         if ($validator->fails()) {
@@ -211,7 +323,26 @@ private function buildTaskTree($tasks)
                 ->withInput();
         }
 
-        $task = Task::create($request->except('assignments'));
+        $taskData = $request->except(['assignments','files']);
+        $maxOrder = Task::where('parent_id', $request->parent_id)->max('order_column');
+        $taskData['order_column'] = $maxOrder + 1;
+        $task = Task::create($taskData);
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                if ($file->isValid()) {
+                    $path = $file->store('public/tugas/' . $task->id);
+
+                    $task->files()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getClientMimeType(),
+                        'uploaded_by' => Auth::id(),
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
+        }
 
          if ($request->has('assignments') && is_array($request->assignments)) {
             // map daftar id menjadi format id => [pivot data]
@@ -237,34 +368,131 @@ private function buildTaskTree($tasks)
                 }
             }
         }
+        
+          TaskStatusLog::create([
+            'task_id'  => $task->id,
+            'child_status_id' => $request->current_status_id,
+            'user_id' => auth()->id()
+        ]);
 
-        return redirect()->route('tasks.index')
+        // Kode BARU
+        $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
+        return redirect($redirectUrl)
             ->with('success', 'Tugas berhasil dibuat');
     }
 
+    public function reparent(Request $request)
+{
+    $request->validate([
+        'task_id' => 'required|exists:tasks,id',
+        'parent_id' => 'nullable|exists:tasks,id', // Parent bisa null (jadi root task)
+    ]);
+
+    $task = Task::find($request->task_id);
+    
+    // Cek agar task tidak menjadi parent dari dirinya sendiri
+    if ($task->id == $request->parent_id) {
+        return response()->json(['status' => 'error', 'message' => 'Task tidak bisa menjadi parent dari dirinya sendiri.'], 422);
+    }
+
+    $task->parent_id = $request->parent_id;
+
+    // Set order_column ke posisi terakhir di dalam parent baru
+    $maxOrder = Task::where('parent_id', $request->parent_id)->max('order_column');
+    $task->order_column = $maxOrder + 1;
+    
+    $task->save();
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Parent task berhasil diubah.'
+    ], 200);
+}
+
+public function reorder(Request $request)
+{
+    $request->validate([
+        'ids' => 'required|array'
+    ]);
+
+    foreach ($request->ids as $index => $id) {
+        // Update order_column sesuai urutan baru dari array
+        Task::where('id', $id)->update(['order_column' => $index]);
+    }
+
+    return response()->json(['status' => 'success'], 200);
+}
+
+    private function getTaskPath(Task $task): string
+    {
+        $path = collect();
+        $current = $task;
+        while ($current) {
+            $path->prepend($current->title);
+            $current = $current->parent;
+        }
+        return $path->implode(' / ');
+    }
     /**
      * Menampilkan form edit tugas
      *
      * @param int $id
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function edit($id)
+   public function edit($id)
     {
-     
-          $task = Task::with(['assignments', 'links'])->find($id); // Tambahkan with('links')
+        $task = Task::with(['assignments', 'links', 'parent'])->find($id);
 
-       if (!$task) {
-        return redirect()->route('tasks.index')
-            ->with('error', 'Tugas tidak ditemukan');
+        if (!$task) {
+            return redirect()->route('tasks.index')->with('error', 'Tugas tidak ditemukan');
+        }
+
+        // (DIUBAH) Logika untuk memfilter dan menambahkan path ke $mTasks
+        // 1. Ambil semua task dengan relasi yang dibutuhkan
+        $allTasks = Task::with(['currentStatus', 'parent'])->get();
+
+        // 2. Filter koleksi DAN tambahkan atribut 'path' baru
+        $mTasks = $allTasks->filter(function ($potentialParent) use ($task) {
+            // Aturan 1: Sebuah task tidak bisa menjadi parent untuk dirinya sendiri
+            if ($potentialParent->id === $task->id) {
+                return false;
+            }
+            // Aturan 2: Cek apakah task ini atau parent di atasnya ada yang berstatus 'CLOSE'
+            if ($this->hasClosedAncestor($potentialParent)) {
+                return false;
+            }
+            return true;
+        })->map(function ($validParent) {
+            // Aturan 3: Buat dan tambahkan atribut 'path' ke setiap task yang valid
+            $validParent->path = $this->getTaskPath($validParent);
+            return $validParent;
+        });
+
+        $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
+        $employees = Karyawan::select('id', 'nama_karyawan', 'nickname')->get();
+
+        return view('tasks.edit', compact('task', 'headStatuses', 'employees', 'mTasks'));
     }
 
-        $mTasks = Task::with(['currentStatus'])->whereDoesntHave('currentStatus', function ($query) {
-            $query->where('status_code', 'CLOSE');
-        })->get();
-        $headStatuses = HeadStatus::select('id', 'head_status_name')->get();
-        $employees = Karyawan::select('id', 'nama_karyawan')->get();
 
-        return view('tasks.edit', compact('task', 'headStatuses', 'employees','mTasks'));
+ /**
+     * Helper method untuk memeriksa apakah sebuah task atau salah satu parentnya
+     * memiliki status 'CLOSE'.
+     */
+    private function hasClosedAncestor(Task $task)
+    {
+        $current = $task;
+        // Lakukan perulangan ke atas melalui rantai parent
+        while ($current) {
+            // Periksa status task saat ini
+            if ($current->currentStatus && $current->currentStatus->status_code === 'CLOSE') {
+                return true; // Ditemukan status CLOSE, hentikan dan kembalikan true
+            }
+            // Pindah ke parent berikutnya
+            $current = $current->parent;
+        }
+        return false; // Tidak ada status CLOSE di seluruh rantai
     }
 
     /**
@@ -296,6 +524,7 @@ private function buildTaskTree($tasks)
         'link_names.*' => 'string|max:255',
         'link_urls' => 'nullable|array',
         'link_urls.*' => 'url',
+        'files.*' => 'file|max:10240',
     ]);
 
     if ($validator->fails()) {
@@ -304,18 +533,41 @@ private function buildTaskTree($tasks)
             ->withInput();
     }
 
-    $task->update($request->except(['assignments', 'link_names', 'link_urls']));
+    $oldStatusId = $task->current_status_id;
+
+    $task->update($request->except(['assignments', 'link_names', 'link_urls','files']));
+
+
+    if ($request->hasFile('files')) {
+        foreach ($request->file('files') as $file) {
+            if ($file->isValid()) {
+                $path = $file->store('public/tugas/' . $task->id);
+
+                $task->files()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
+                ]);
+            }
+        }
+    }
 
     // Handle assignments
-    if ($request->has('assignments') && is_array($request->assignments)) {
+   $assignments = $request->get('assignments', []); // Ambil 'assignments', jika tidak ada, default ke array kosong.
+
+    if (is_array($assignments)) {
         $now = now();
-        $pivot = collect($request->assignments)->mapWithKeys(function ($id) use ($now) {
+        $pivot = collect($assignments)->mapWithKeys(function ($id) use ($now) {
             return [$id => [
                 'assigned_at'  => $now,
                 'completed_at' => null,
                 'is_completed' => false,
             ]];
         })->toArray();
+
+        // Jika $pivot kosong (assignments: []), sync([]) akan menghapus semua.
         $task->assignments()->sync($pivot);
     }
 
@@ -331,9 +583,50 @@ private function buildTaskTree($tasks)
             }
         }
     }
+    
 
-    return redirect()->route('tasks.index')
-        ->with('success', 'Tugas berhasil dibuat');
+    // (LOGIKA BARU) Hanya buat log jika statusnya benar-benar berubah
+    if ($oldStatusId != $request->current_status_id) {
+        TaskStatusLog::create([
+            'task_id'         => $task->id,
+            'child_status_id' => $request->current_status_id,
+            'user_id'         => auth()->id()
+        ]);
+    }
+
+    // Ganti baris return yang lama dengan ini:
+    $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
+    return redirect($redirectUrl)
+        ->with('success', 'Tugas berhasil diperbarui');
+
+    }
+
+     public function deleteFile(TaskFile $file)
+    {
+        try {
+            // Opsional: Tambahkan pengecekan otorisasi di sini
+            // $this->authorize('delete', $file);
+
+            // Hapus file dari storage
+            Storage::delete($file->file_path);
+
+            // Hapus record file dari database
+            $file->delete();
+
+            // Kirim respon sukses dalam format JSON
+            return response()->json(['success' => true, 'message' => 'File berhasil dihapus.']);
+
+        } catch (\Exception $e) {
+            // Jika terjadi error, kirim respon error
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus file.'], 500);
+        }
+    }
+    
+    public function downloadFile(TaskFile $file)
+    {
+        // Anda bisa menambahkan pengecekan otorisasi di sini jika perlu
+        return Storage::download($file->file_path, $file->file_name);
     }
 
     public function updateStatus(Request $request, Task $task)
@@ -349,9 +642,41 @@ private function buildTaskTree($tasks)
         $task->current_status_id = $request->current_status_id;
         $task->save();
 
+          TaskStatusLog::create([
+            'task_id'  => $task->id,
+            'child_status_id' => $request->current_status_id,
+            'user_id' => auth()->id()
+        ]);
+
         return response()->json(['message' => 'Status task berhasil diperbarui.', 'task' => $task->fresh()]);
     }
 
+
+    public function setParent(Request $request, Task $task)
+{
+    // Ambil ID parent baru dari request, bisa null jika dilepas ke area utama
+    $newParentId = $request->input('parent_id');
+
+    // Validasi 1: Sebuah tugas tidak bisa menjadi parent untuk dirinya sendiri
+    if ($task->id == $newParentId) {
+        return response()->json(['error' => 'Sebuah tugas tidak bisa menjadi parent untuk dirinya sendiri.'], 422);
+    }
+
+    // Validasi 2: Parent baru tidak boleh merupakan turunan dari tugas yang dipindah
+    // Ini untuk mencegah loop tak terbatas (misal: A > B > C, lalu C dipindah jadi parent A)
+    if ($newParentId) {
+        // Kita gunakan helper 'collectDescendantIds' yang sudah ada
+        $descendantIds = $this->collectDescendantIds([$task->id]);
+        if (in_array($newParentId, $descendantIds)) {
+            return response()->json(['error' => 'Tidak bisa memindahkan tugas ke dalam sub-tugasnya sendiri.'], 422);
+        }
+    }
+
+    $task->parent_id = $newParentId;
+    $task->save();
+
+    return response()->json(['success' => 'Hierarki tugas berhasil diperbarui.']);
+}
 
     /**
      * Mengambil semua status child berdasarkan head_status_id 
@@ -398,20 +723,22 @@ private function buildTaskTree($tasks)
         ]);
     }
 
-     public function destroy($id)
+     public function destroy(Request $request, $id)
     {
         $task = Task::find($id);
 
+         $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
         if (!$task) {
-            return redirect()->route('tasks.index')
-                ->with('error', 'Tugas tidak ditemukan');
+            return redirect($redirectUrl)
+            ->with('error', 'Tugas tidak ditemukan');
         }
 
         // Hapus menggunakan soft delete
         $task->delete();
 
-        return redirect()->route('tasks.index')
-            ->with('success', 'Tugas berhasil dihapus (dipindahkan ke trash)');
+        return redirect($redirectUrl)
+            ->with('success', 'Tugas berhasil dihapus');
     }
 
     /**
@@ -468,11 +795,30 @@ private function buildTaskTree($tasks)
             ->with('success', 'Tugas berhasil dihapus permanen');
     }
 
+    public function getStatusTimeline(Task $task)
+{
+    $timeline = $task->statusLogs()
+        ->with(['changer', 'newStatus']) // load newStatus dan child-nya
+        ->orderBy('created_at', 'asc')
+        ->get()
+        ->map(function ($log) {
+            return [
+                'id' => $log->id,
+                'changer' => $log->changer?->name, // nama user yg ubah
+                'status' => $log->newStatus?->status_name, // status utama
+                'status_color' => $log->newStatus?->status_color, // status utama
+                'created_at' => $log->created_at->format('d M Y H:i'),
+            ];
+        });
 
-
-
-
-
+    return response()->json([
+        'task' => [
+            'id' => $task->id,
+            'title' => $task->title,
+        ],
+        'timeline' => $timeline,
+    ]);
+}
 
 
 
@@ -629,4 +975,23 @@ private function buildTaskTree($tasks)
             'total' => $tasks->count()
         ]);
     }
+
+    public function getBreadcrumbsApi(Task $task)
+{
+    // Eager load semua parent secara rekursif
+    $task->load('parent');
+
+    $breadcrumbs = collect();
+    $current = $task;
+    while ($current) {
+        // Prepend untuk urutan dari atas ke bawah
+        $breadcrumbs->prepend([
+            'id' => $current->id,
+            'title' => $current->title
+        ]);
+        $current = $current->parent;
+    }
+
+    return response()->json($breadcrumbs);
+}
 }

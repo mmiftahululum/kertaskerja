@@ -1,29 +1,61 @@
-<tr class="{{ $level > 0 ? 'child-task' : '' }} task-row" data-parentid="{{ $task->parent_id }}" data-childid="{{ $task->id }}" data-task-id="{{ $task->id }}">
-    <td>
-         <!-- Icon expand/collapse hanya jika ada child -->
-        @if($task->children->isNotEmpty())
-        <button class="toggle-child"  data-open="true" data-parentid="{{ $task->parent_id }}" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-        </button>
-        @endif
+
+@php
+    $isAssignedToMe = $task->assignments->contains('id', $currentKaryawanId);
+@endphp
+
+<tr style="background:{{ $task->currentStatus->status_color }}0D; padding-left: {{ $level * 20 }}px;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" 
+data-edit-url="{{ route('tasks.edit', $task) }}"
+data-delete-url="{{ route('tasks.destroy', $task) }}"
+ data-is-assigned-to-me="{{ $isAssignedToMe ? 'true' : 'false' }}" 
+ data-parentid="{{ $task->parent_id }}" 
+ data-parent-id="{{ $task->parent_id ?? 'root' }}"
+ data-childid="{{ $task->id }}" 
+ data-task-id="{{ $task->id }}"
+ data-level="{{ $level }}"
+ x-data="{ open: false }">
+
+<td class="px-2 py-2 whitespace-nowrap text-center drag-handle cursor-move">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
     </td>
-    <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 16 }}px">
-          {{ $task->title }}
-        </td>
-        <td>
-<button
-        type="button"
-        onclick='openCreateChildModal({{ $task->id }}, {!! json_encode($task->title) !!}, {{ $task->head_status_id }})'
-        class="bg-cyan-100 text-cyan-700 hover:bg-cyan-200 rounded-md px-3 py-1 flex items-center gap-1 shadow-sm transition duration-200"
-        aria-label="Tambah anak tugas"
-    >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+
+    <td class="px-1 py-1 whitespace-nowrap text-sm font-medium" style="padding-left: {{ ($level * 20) + 1 }}px">
+           <!-- Icon expand/collapse hanya jika ada child -->
+      
+          <div class="flex items-center">
+
+    <div class="flex-shrink-0 w-8 text-center pt-2">
+      @if($task->children->isNotEmpty())
+    <button class="toggle-child" data-id="{{ $task->id }}" aria-label="Tampilkan/Tutup anak tugas">
+        {{-- (DIUBAH) Ikon panah kanan + class rotate-90 agar defaultnya ke bawah --}}
+        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200 rotate-90" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
         </svg>
     </button>
+@endif
+    </div>
+
+    <div class="flex-grow text-sm">
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span>
+        <a href="{{ route('tasks.view', $task) . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" target="blank" class="text-gray-900 hover:underline font-semibold">
+            {{ $task->title }}
+        </a>
+    </div>
+    
+</div>
+        </td>
+        <td>
+            <button
+                type="button"
+                onclick='openCreateChildModal({{ $task->id }}, {!! json_encode($task->title) !!}, {{ $task->head_status_id }})'
+                class="bg-cyan-100 text-cyan-700 hover:bg-cyan-200 rounded-md px-3 py-1 flex items-center gap-1 shadow-sm transition duration-200"
+                aria-label="Tambah anak tugas"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+            </button>
         </td>
     <td class="px-1 py-1 text-xs text-gray-700">
         <select required
@@ -39,55 +71,83 @@
             @endforeach
         </select>
     </td>
+        <td class="px-1 py-1 text-xs text-gray-700">
+        <button
+            type="button"
+            class="btn btn-sm btn-outline-info flex items-center gap-1"
+            onclick="showTaskStatusTimeline({{ $task->id }})"
+            title="Lihat Histori Status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V12"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8H12.01"/>
+            </svg>
+            <span class="sr-only">Histori Status</span>
+        </button>
+    </td>
 
     <!-- Tanggal Mulai -->
     <td class="px-1 py-1 text-xs text-gray-700">
-        {{ $task->planned_start ? $task->planned_start->format('d M Y') : '-' }}
+        {{ $task->planned_start ? $task->planned_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-xs">
-        @if($task->planned_end)
-            @php
-                $today = now()->startOfDay();
-                $plannedEnd = $task->planned_end->startOfDay();
-            @endphp
-            <span class="{{ $today > $plannedEnd ? 'text-red-600 font-medium' : 'text-gray-700' }}">
-                {{ $task->planned_end->format('d M Y') }}
-            </span>
-        @else
-            <span class="text-gray-400">-</span>
-        @endif
+    <td class="px-1 py-1 text-xs text-gray-700">
+        {{ $task->planned_end ? $task->planned_end->format('d M y') : '-' }}
     </td>
+
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    @if($task->planned_start && $task->planned_end)
+        @php
+            // Pastikan keduanya adalah objek Carbon untuk perhitungan
+            $start = \Carbon\Carbon::parse($task->planned_start);
+            $end = \Carbon\Carbon::parse($task->planned_end);
+            
+            // Hitung selisih hari, tambahkan 1 agar inklusif
+            // Contoh: 1 Jan - 1 Jan dihitung 1 hari
+            $mandays = $start->diffInDays($end) + 1;
+        @endphp
+        <span class="font-medium">{{ $mandays }} d</span>
+    @else
+        {{-- Jika salah satu tanggal kosong, tampilkan strip --}}
+        -
+    @endif
+</td>
 
      <!-- Tanggal Mulai -->
-    <td class="px-1 py-1 text-sm text-gray-700 text-xs">
-        {{ $task->actual_start ? $task->actual_start->format('d M Y') : '-' }}
+    <td class="px-1 py-1 text-gray-700 text-xs">
+        {{ $task->actual_start ? $task->actual_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-xs">
-        @if($task->actual_end)
-            @php
-                $today = now()->startOfDay();
-                $plannedEnd = $task->actual_end->startOfDay();
-            @endphp
-            <span class="{{ $today > $plannedEnd ? 'text-red-600 font-medium' : 'text-gray-700' }}">
-                {{ $task->actual_end->format('d M Y') }}
-            </span>
-        @else
-            <span class="text-gray-400">-</span>
-        @endif
+    <td class="px-1 py-1 text-gray-700 text-xs">
+          {{ $task->actual_end ? $task->actual_end->format('d M y') : '-' }}
     </td>
+
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    @if($task->actual_start && $task->actual_end)
+        @php
+            $start = \Carbon\Carbon::parse($task->actual_start);
+            $end = \Carbon\Carbon::parse($task->actual_end);
+            
+            // Hitung selisih hari, tambahkan 1 agar inklusif
+            $mandays = $start->diffInDays($end) + 1;
+        @endphp
+        <span class="font-medium">{{ $mandays }} d</span>
+    @else
+        {{-- Jika salah satu tanggal kosong, tampilkan strip --}}
+        -
+    @endif
+</td>
 
 
     <td class="px-1 py-1 text-xs text-gray-700">
         @if($task->assignments && $task->assignments->count())
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
-                    <span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
-                        {{ $assignment->nama_karyawan }}
-                    </span>
+                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}?text={{ $task->title }}"><span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
+                        {{ $assignment->nickname }}
+                    </span></a>
                 @endforeach
             </ul>
         @else
@@ -121,7 +181,7 @@
     @endif
 </td>
 
-    <td class="px-1 py-1 text-xs text-gray-700 pointer" 
+    <td class="px-1 py-1 text-xs text-gray-700" style="cursor: pointer;" 
     onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
     <div x-data="{ expanded: false }">
         @php

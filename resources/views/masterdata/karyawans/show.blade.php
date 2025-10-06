@@ -38,6 +38,21 @@
                         <p class="mt-1 text-gray-900 font-medium">{{ $karyawan->nama_karyawan }}</p>
                     </div>
 
+                     <div>
+                        <p class="text-sm text-gray-500">Nick Name</p>
+                        <p class="mt-1 text-gray-900 font-medium">{{ $karyawan->nickname }}</p>
+                    </div>
+
+                     <div>
+                        <p class="text-sm text-gray-500">Email</p>
+                        <p class="mt-1 text-gray-900 font-medium">{{ $karyawan->email }}</p>
+                    </div>
+
+                     <div>
+                        <p class="text-sm text-gray-500">No Telepon</p>
+                        <p class="mt-1 text-gray-900 font-medium">{{ $karyawan->phone_no }}</p>
+                    </div>
+
                     <div>
                         <p class="text-sm text-gray-500">Username Git</p>
                         <p class="mt-1 text-gray-900 font-medium">{{ $karyawan->username_git }}</p>

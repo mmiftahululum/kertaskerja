@@ -37,8 +37,11 @@ class TaskCommentController extends Controller
         // $comment->metadata = ['some_key' => 'some_value']; 
         $comment->save();
 
-        return redirect()->route('tasks.index')
-            ->with('success', 'Tugas berhasil dibuat');
+        // Kode BARU
+        $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');
+
+        return redirect($redirectUrl)
+            ->with('success', 'Komentar berhasil ditambahkan.');
     }
 
 }

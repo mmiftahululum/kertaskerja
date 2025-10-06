@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->string('title'); // Judul tugas
-            $table->text('description')->nullable(); // Deskripsi tugas
+            $table->longText('description')->nullable(); // Deskripsi tugas
             $table->unsignedBigInteger('parent_id')->nullable(); // Untuk sub-tugas
             $table->unsignedBigInteger('head_status_id'); // Status head (dari tabel status yang sudah ada)
             $table->unsignedBigInteger('current_status_id'); // Status child (berdasarkan grups head)
@@ -25,8 +25,8 @@ return new class extends Migration
             $table->integer('progress_percent')->default(0); // Progress dalam persen (0-100)
 
             // Relasi
-            $table->foreign('head_status_id')->references('id')->on('head_statuses')->onDelete('set null');
-            $table->foreign('current_status_id')->references('id')->on('child_statuses')->onDelete('set null');
+            $table->foreign('head_status_id')->references('id')->on('head_statuses');
+            $table->foreign('current_status_id')->references('id')->on('child_statuses');
            
             $table->timestamps();
         });

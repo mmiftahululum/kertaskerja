@@ -9,12 +9,23 @@ export default {
         "./resources/**/*.vue",
     ],
 
+    
+
     theme: {
-        extend: {
-            fontFamily: {
+       extend: {
+                fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                },
+                keyframes: {
+                grow: {
+                    '0%': { height: '0%' },
+                    '100%': { height: '100%' },
+                },
+                },
+                animation: {
+                grow: 'grow 1s ease-out forwards',
+                },
             },
-        },
     },
 
     plugins: [forms],

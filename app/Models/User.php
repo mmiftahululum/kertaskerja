@@ -44,4 +44,9 @@ class User extends Authenticatable
     ];
 
     
+    public function taskFilterBookmarks()
+    {
+        return $this->hasMany(\App\Models\TaskFilterBookmark::class);
+    }
+
 }

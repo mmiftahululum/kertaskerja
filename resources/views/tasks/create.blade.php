@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-medium text-gray-900">Form Buat Tugas</h3>
@@ -40,24 +40,22 @@
                         <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
                         <textarea name="description" id="description" rows="4"
                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="Deskripsikan tugas" required>{{ old('description') }}</textarea>
+                                  placeholder="Deskripsikan tugas">{{ old('description') }}</textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
+                    <div class="grid grid-cols-4 gap-1">
+                       <div>
                             <label for="planned_start" class="block text-sm font-medium text-gray-700">Plan Mulai</label>
                             <input type="date" name="planned_start" id="planned_start" 
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                value="{{ now()->format('Y-m-d') }}"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label for="planned_end" class="block text-sm font-medium text-gray-700">Plan Selesai</label>
                             <input type="date" name="planned_end" id="planned_end" 
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
+                            <div>
                             <label for="actual_start" class="block text-sm font-medium text-gray-700">Real Mulai</label>
                             <input type="date" name="actual_start" id="actual_start" 
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -69,7 +67,10 @@
                         </div>
                     </div>
 
+             
+
                     {{-- Contoh dropdown untuk memilih head_status (relasi) --}}
+                      <div class="grid grid-cols-2 gap-1">
                    <div>
                         <label for="head_status_id" class="block text-sm font-medium text-gray-700">Head Status</label>
                         <select name="head_status_id" id="head_status_id" required
@@ -89,6 +90,8 @@
                             <!-- Opsi akan diisi otomatis lewat AJAX -->
                         </select>
                     </div>
+
+</div>
 
                    <div>
                         <label for="assignments" class="block text-sm font-medium text-gray-700">Assign ke Karyawan</label>
@@ -154,6 +157,7 @@
 
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+ @include('layouts.tiny')
 
 <style>
     /* Pastikan control dan dropdown Tom Select ber-background putih */

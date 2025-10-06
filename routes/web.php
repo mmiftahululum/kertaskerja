@@ -7,7 +7,9 @@ use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\MasterAppController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ActivityLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +32,12 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
+    Route::get('/timesheets', [TimesheetController::class, 'index'])->name('timesheets.index');
+    Route::get('/my-timesheet', [TimesheetController::class, 'myTimesheet'])->name('timesheets.mine');
+    Route::get('/timesheets/create', [TimesheetController::class, 'create'])->name('timesheets.create');
+    Route::post('/timesheets', [TimesheetController::class, 'store'])->name('timesheets.store');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -50,14 +58,30 @@ Route::middleware('auth')->group(function () {
     Route::put('/apps/update/{id}', [MasterAppController::class, 'update'])->name('masterapps.update');
     Route::get('/apps/destroy/{id}', [MasterAppController::class, 'destroy'])->name('masterapps.destroy');
 
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+
     Route::resource('head-statuses', HeadStatusController::class);
     Route::resource('child-statuses', ChildStatusController::class);
+
+    Route::get('/tasks/files/{file}/download', [TaskController::class, 'downloadFile'])->name('tasks.files.download');
+    Route::delete('/tasks/files/{file}', [TaskController::class, 'deleteFile'])->name('tasks.files.delete');
+
     Route::resource('tasks', TaskController::class);
+    
+    Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder'); 
+    Route::post('tasks/reparent', [TaskController::class, 'reparent'])->name('tasks.reparent');
+
+    Route::patch('/tasks/{task}/set-parent', [TaskController::class, 'setParent'])->name('tasks.set-parent');
+    Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
+    Route::get('/tasks/view/{task}', [TaskController::class, 'show'])->name('tasks.view');
+
+    Route::post('/tasks/bookmarks', [App\Http\Controllers\TaskFilterBookmarkController::class, 'store'])->name('tasks.bookmarks.store');
+    Route::delete('/tasks/bookmarks/{bookmark}', [App\Http\Controllers\TaskFilterBookmarkController::class, 'destroy'])->name('tasks.bookmarks.destroy');
 
     // routes/web.php
     Route::get('/tasks/export/filtered', [TaskController::class, 'exportFiltered'])->name('tasks.export-filtered');
     Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
-
+    
     // Pastikan ini ada di dalam group middleware 'auth' atau yang sesuai
     Route::patch('/tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
 

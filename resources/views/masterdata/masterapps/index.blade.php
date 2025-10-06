@@ -88,33 +88,95 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $app->nama_apps }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->gitaws }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="{{ $app->domain_url_prod }}">
-                                            {{ $app->domain_url_prod ?: '-' }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="{{ $app->domain_url_dev }}">
-                                            {{ $app->domain_url_dev ?: '-' }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->username_login_dev }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->password_login_dev }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->db_IP_port_dev }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->db_name }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->db_username }}
-                                        </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ $app->db_password }}
-                                        </td>
+                                       {{-- MODIFIED: Git AWS --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->gitaws }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->gitaws }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: Domain Prod --}}
+            <td class="px-6 py-4 text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span class="truncate" title="{{ $app->domain_url_prod }}">{{ $app->domain_url_prod ?: '-' }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->domain_url_prod ?? '' }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md flex-shrink-0 ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: Domain Dev --}}
+            <td class="px-6 py-4 text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span class="truncate" title="{{ $app->domain_url_dev }}">{{ $app->domain_url_dev ?: '-' }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->domain_url_dev ?? '' }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md flex-shrink-0 ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: Username Login --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->username_login_dev }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->username_login_dev }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: Password Login --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->password_login_dev }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->password_login_dev }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: DB IP --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->db_IP_port_dev }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->db_IP_port_dev }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: DB Name --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->db_name }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->db_name }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+
+            {{-- MODIFIED: DB Username --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->db_username }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->db_username }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
+            
+            {{-- MODIFIED: DB Password --}}
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <div class="flex items-center justify-between">
+                    <span>{{ $app->db_password }}</span>
+                    <button onclick="copyToClipboard(this, '{{ $app->db_password }}')" class="p-1 text-gray-400 hover:text-gray-800 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </button>
+                </div>
+            </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                             <a href="{{ route('masterapps.edit', $app->id) }}"
                                                class="text-indigo-600 hover:text-indigo-900">
@@ -202,8 +264,66 @@
         </div>
     </div>
 
+    
+
     <!-- Script untuk Modal Hapus -->
     <script>
+
+        // ▼▼▼ TAMBAHKAN KODE INI ▼▼▼
+
+function copyToClipboard(element, text) {
+    // Jangan lakukan apa-apa jika teks kosong atau hanya berisi strip
+    if (!text || text.trim() === '-' || text.trim() === '') {
+        return;
+    }
+
+    // Cek apakah Clipboard API modern tersedia (membutuhkan HTTPS atau localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        // Gunakan API modern jika memungkinkan
+        navigator.clipboard.writeText(text).then(function() {
+            showFeedback(element);
+        });
+    } else {
+        // Fallback ke metode lama untuk browser/lingkungan yang tidak mendukung
+        let textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // Buat textarea tidak terlihat
+        textArea.style.position = "fixed";
+        textArea.style.top = "-999999px";
+        textArea.style.left = "-999999px";
+        
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            document.execCommand('copy');
+            showFeedback(element);
+        } catch (err) {
+            console.error('Gagal menyalin teks dengan metode lama: ', err);
+            alert('Oops, gagal menyalin teks.');
+        } finally {
+            document.body.removeChild(textArea);
+        }
+    }
+}
+
+function showFeedback(element) {
+    // Simpan konten asli (ikon SVG)
+    const originalContent = element.innerHTML;
+    // Tampilkan pesan "Tersalin!"
+    element.innerHTML = '<span class="text-xs text-green-600 font-semibold">Tersalin!</span>';
+    
+    // Kembalikan ke ikon semula setelah 1.5 detik
+    setTimeout(() => {
+        element.innerHTML = originalContent;
+    }, 1500);
+}
+
+// ▲▲▲ BATAS AKHIR KODE YANG DITAMBAHKAN ▲▲▲
+
+
         function openDeleteModal(appId, appName) {
             document.getElementById('appName').textContent = appName;
             document.getElementById('deleteForm').action = `/apps/destroy/${appId}`;
