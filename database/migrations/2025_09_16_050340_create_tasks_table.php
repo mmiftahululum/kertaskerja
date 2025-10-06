@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title'); // Judul tugas
             $table->longText('description')->nullable(); // Deskripsi tugas
             $table->unsignedBigInteger('parent_id')->nullable(); // Untuk sub-tugas
-            $table->unsignedBigInteger('head_status_id'); // Status head (dari tabel status yang sudah ada)
+            $table->unsignedBigInteger('head_status_id')->nullable(); // Status head (dari tabel status yang sudah ada)
             $table->unsignedBigInteger('current_status_id'); // Status child (berdasarkan grups head)
             $table->timestamp('planned_start')->nullable(); // Rencana mulai
             $table->timestamp('planned_end')->nullable(); // Rencana akhir
