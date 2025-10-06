@@ -158,6 +158,7 @@ public function index(Request $request)
     $employees = Karyawan::select('id', 'nama_karyawan', 'nickname')->get();
     $currentKaryawan = Karyawan::where('email', $userEmail)->first();
     $currentKaryawanId = $currentKaryawan ? $currentKaryawan->id : null; 
+    
     $bookmarks = Auth::user()->taskFilterBookmarks()->orderBy('name')->get();
 
     return view('tasks.index', compact(

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KaryawanController;
 use App\Http\Controllers\MasterAppController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskPublicController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,25 @@ use App\Http\Controllers\ActivityLogController;
 Route::get('/', function () {
     return view('welcome');
 });
+
+ Route::get('tasks/{task}/comments', function (App\Models\Task $task) {
+    $comments = $task->comments()
+                    ->with('user:id,name')          // eager‑load nama user
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(function ($c) {
+                        return [
+                            'id'        => $c->id,
+                            'comment'   => $c->comment,
+                            'user_name' => $c->user->name ?? 'Anon',
+                            'created_at'=> $c->created_at->toDateTimeString(),
+                        ];
+                    });
+    return response()->json($comments);
+});
+Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
+Route::get('/public/tasks', [TaskPublicController::class, 'index'])->name('public.tasks.index');
+// Route::get('/public/tasks/view/{task}', [TaskPublicController::class, 'show'])->name('tasks.view');
 
 
 Route::get('/dashboard', function () {
@@ -72,7 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::post('tasks/reparent', [TaskController::class, 'reparent'])->name('tasks.reparent');
 
     Route::patch('/tasks/{task}/set-parent', [TaskController::class, 'setParent'])->name('tasks.set-parent');
-    Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
+  
     Route::get('/tasks/view/{task}', [TaskController::class, 'show'])->name('tasks.view');
 
     Route::post('/tasks/bookmarks', [App\Http\Controllers\TaskFilterBookmarkController::class, 'store'])->name('tasks.bookmarks.store');
@@ -90,21 +110,7 @@ Route::middleware('auth')->group(function () {
         return response()->json($childStatuses);
     })->name('child-statuses.byHeadStatus');
 
-    Route::get('tasks/{task}/comments', function (App\Models\Task $task) {
-    $comments = $task->comments()
-                    ->with('user:id,name')          // eager‑load nama user
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->map(function ($c) {
-                        return [
-                            'id'        => $c->id,
-                            'comment'   => $c->comment,
-                            'user_name' => $c->user->name ?? 'Anon',
-                            'created_at'=> $c->created_at->toDateTimeString(),
-                        ];
-                    });
-    return response()->json($comments);
-});
+   
 
 });
 

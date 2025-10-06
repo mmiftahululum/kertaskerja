@@ -46,8 +46,8 @@
                 <a href="{{ route('login') }}" class="inline-block px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150">
                     Mulai Bekerja
                 </a>
-                <a href="#" class="inline-block px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-50 transition duration-150">
-                    Pelajari Lebih Lanjut
+                <a href="{{ route('public.tasks.index') }}" class="inline-block px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-50 transition duration-150">
+                    Lihat Tugas
                 </a>
             </div>
         </div>
