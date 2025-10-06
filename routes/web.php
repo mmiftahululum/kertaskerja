@@ -43,7 +43,7 @@ Route::get('/', function () {
     return response()->json($comments);
 });
 Route::get('/tasks/{task}/status-timeline', [TaskController::class, 'getStatusTimeline']);
-Route::get('/public/tasks', [TaskPublicController::class, 'index'])->name('public.tasks.index');
+Route::get('/pub/tasks', [TaskPublicController::class, 'index'])->name('public.tasks.index');
 // Route::get('/public/tasks/view/{task}', [TaskPublicController::class, 'show'])->name('tasks.view');
 
 
