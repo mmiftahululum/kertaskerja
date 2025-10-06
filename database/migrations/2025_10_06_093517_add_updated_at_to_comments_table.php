@@ -11,14 +11,14 @@ return new class extends Migration
      */
   public function up()
     {
-        Schema::table('comments', function (Blueprint $table) {
+        Schema::table('task_comments', function (Blueprint $table) {
             $table->timestamp('updated_at')->nullable()->after('created_at'); // Menambahkan kolom updated_at
         });
     }
 
     public function down()
     {
-        Schema::table('comments', function (Blueprint $table) {
+        Schema::table('task_comments', function (Blueprint $table) {
             $table->dropColumn('updated_at'); // Untuk rollback
         });
     }
