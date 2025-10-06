@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ----------------------------------------------------------------------
+    # Aturan Keamanan (tetap penting)
+    # ----------------------------------------------------------------------
+    <Files ".env">
+        Require all denied
+    </Files>
+    RewriteRule ^(artisan|composer\.json|package\.json|\.env) - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor) - [F,L]
+
+    # ----------------------------------------------------------------------
+    # ATURAN PENGALIHAN YANG DIPERBAIKI
+    # ----------------------------------------------------------------------
+    # Arahkan semua permintaan ke folder /public
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
