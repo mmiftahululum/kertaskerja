@@ -8,7 +8,9 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ url('/build/assets/app-o_MvSCSc.css') }}">
+    <script type="module" src="{{ url('/build/assets/app-CpcaDEYu.js') }}"></script>
+
 </head>
 <body class="antialiased bg-gray-100">
     <div class="relative min-h-screen flex flex-col items-center justify-center">
