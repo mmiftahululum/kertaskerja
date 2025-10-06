@@ -1552,37 +1552,18 @@ function showTaskStatusTimeline(taskId) {
             data.timeline.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
            let html = `
-  <div class="relative ml-6">
-    <!-- Garis dasar abu -->
-    <div class="absolute left-0 top-0 h-full border-l-2 border-gray-300"></div>
-    <!-- Garis progress biru (sampai item terakhir) -->
-    <div class="absolute left-0 top-0 h-full border-l-2 border-blue-500 animate-[grow_1s_ease-out_forwards]"></div>
-    <div class="space-y-8">
-`;
+                <div class="relative ml-6">
+                    <!-- Garis dasar abu -->
+                    <div class="absolute left-0 top-0 h-full border-l-2 border-gray-300"></div>
+                    <!-- Garis progress biru (sampai item terakhir) -->
+                    <div class="absolute left-0 top-0 h-full border-l-2 border-blue-500 animate-[grow_1s_ease-out_forwards]"></div>
+                    <div class="space-y-8">
+                `;
 
 data.timeline.forEach((item, index) => {
     const next = data.timeline[index + 1];
     let duration = '-';
-
-    if (next) {
-        const start = new Date(item.created_at);
-        const end   = new Date(next.created_at);
-        if (!isNaN(start) && !isNaN(end)) {
-            const diff  = Math.floor((end - start) / 1000);
-            const h = Math.floor(diff / 3600);
-            const m = Math.floor((diff % 3600) / 60);
-            duration = (h ? h + ' jam ' : '') + (m ? m + ' menit' : '');
-        }
-    } else {
-        const start = new Date(item.created_at);
-        const now   = new Date();
-        if (!isNaN(start)) {
-            const diff  = Math.floor((now - start) / 1000);
-            const h = Math.floor(diff / 3600);
-            const m = Math.floor((diff % 3600) / 60);
-            duration = (h ? h + ' jam ' : '') + (m ? m + ' menit' : '');
-        }
-    }
+    duration = item.duration;
 
     const isLast = index === data.timeline.length - 1;
     const circleClass = isLast

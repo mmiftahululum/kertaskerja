@@ -11,7 +11,8 @@ use App\Models\TaskStatusLog;
 use App\Models\HeadStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;          // <-- ditambah
+use Illuminate\Support\Facades\Auth;        
+use Carbon\Carbon;  // <-- ditambah
 use Illuminate\Support\Collection;   
 
 class TaskController extends Controller
@@ -796,31 +797,46 @@ public function reorder(Request $request)
     }
 
     public function getStatusTimeline(Task $task)
-{
-    $timeline = $task->statusLogs()
-        ->with(['changer', 'newStatus']) // load newStatus dan child-nya
-        ->orderBy('created_at', 'asc')
-        ->get()
-        ->map(function ($log) {
+    {
+        $statusLogs = $task->statusLogs()
+            ->with(['changer', 'newStatus'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $timeline = $statusLogs->map(function ($log, $index) use ($statusLogs) {
+            $currentTimestamp = $log->created_at;
+            $durationText = '';
+
+            // Cek apakah ada log setelah ini
+            if (isset($statusLogs[$index + 1])) {
+                // Jika ada, hitung durasi ke log berikutnya
+                $nextTimestamp = $statusLogs[$index + 1]->created_at;
+                $durationInMinutes = $nextTimestamp->diffInMinutes($currentTimestamp);
+                $durationText = formatDuration($durationInMinutes);
+            } else {
+                // Jika ini adalah log terakhir, hitung durasi dari log ini sampai sekarang
+                $durationInMinutes = Carbon::now()->diffInMinutes($currentTimestamp);
+                $durationText = formatDuration($durationInMinutes) . ' (saat ini)';
+            }
+
             return [
                 'id' => $log->id,
-                'changer' => $log->changer?->name, // nama user yg ubah
-                'status' => $log->newStatus?->status_name, // status utama
-                'status_color' => $log->newStatus?->status_color, // status utama
+                'changer' => $log->changer?->name,
+                'status' => $log->newStatus?->status_name,
+                'status_color' => $log->newStatus?->status_color,
                 'created_at' => $log->created_at->format('d M Y H:i'),
+                'duration' => $durationText, // <-- Tambahkan durasi di sini
             ];
         });
 
-    return response()->json([
-        'task' => [
-            'id' => $task->id,
-            'title' => $task->title,
-        ],
-        'timeline' => $timeline,
-    ]);
-}
-
-
+        return response()->json([
+            'task' => [
+                'id' => $task->id,
+                'title' => $task->title,
+            ],
+            'timeline' => $timeline,
+        ]);
+    }
 
 
 
