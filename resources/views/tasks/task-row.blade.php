@@ -38,7 +38,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
 
     <div class="flex-grow text-sm">
         <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color:{{ $task->currentStatus->status_color }};  margin-right: 8px; vertical-align: middle;"></span>
-        <a href="{{ route('tasks.view', $task) }}" target="blank" class="text-gray-900 hover:underline font-semibold">
+        <a href="{{ route('tasks.view', $task) . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" target="blank" class="text-gray-900 hover:underline font-semibold">
             {{ $task->title }}
         </a>
     </div>

@@ -62,7 +62,12 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('head-statuses', HeadStatusController::class);
     Route::resource('child-statuses', ChildStatusController::class);
+
+    Route::get('/tasks/files/{file}/download', [TaskController::class, 'downloadFile'])->name('tasks.files.download');
+    Route::delete('/tasks/files/{file}', [TaskController::class, 'deleteFile'])->name('tasks.files.delete');
+
     Route::resource('tasks', TaskController::class);
+    
     Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder'); 
     Route::post('tasks/reparent', [TaskController::class, 'reparent'])->name('tasks.reparent');
 
@@ -76,7 +81,7 @@ Route::middleware('auth')->group(function () {
     // routes/web.php
     Route::get('/tasks/export/filtered', [TaskController::class, 'exportFiltered'])->name('tasks.export-filtered');
     Route::post('/tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
-
+    
     // Pastikan ini ada di dalam group middleware 'auth' atau yang sesuai
     Route::patch('/tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
 

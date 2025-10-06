@@ -32,24 +32,35 @@
                                             <p class="font-semibold">{{ $activity->description }}</p>
                                             <p class="text-xs">
                                                 <span class="font-medium">{{ $activity->log_name }}</span>:
-                                                <span class="text-gray-800">{{ $activity->subject->title ?? $activity->subject->name ?? '' }}</span>
+                                                <span class="text-gray-800">{{ optional($activity->subject)->title ?? optional($activity->subject)->name ?? '' }}</span>
                                             </p>
                                         </td>
                                         <td class="px-4 py-4 whitespace-normal text-xs text-gray-700">
-                                            {{-- Cek apakah ada properti perubahan --}}
-                                            @if ($activity->properties->has('attributes') || $activity->properties->has('old'))
+                                            {{-- Dapatkan 'old' dan 'attributes' dengan aman --}}
+                                            @php
+                                                $old = $activity->properties->get('old');
+                                                $attributes = $activity->properties->get('attributes');
+                                            @endphp
+
+                                            @if (!empty($old) || !empty($attributes))
                                                 <ul class="space-y-1">
-                                                    @if($activity->event === 'updated')
-                                                        @foreach($activity->properties['old'] as $key => $value)
-                                                            <li>
-                                                                <strong class="font-semibold">{{ $key }}:</strong>
-                                                                <span class="text-red-600 line-through">{{ $value }}</span> → 
-                                                                <span class="text-green-600">{{ $activity->properties['attributes'][$key] }}</span>
-                                                            </li>
+                                                    @if($activity->event === 'updated' && !empty($old) && !empty($attributes))
+                                                        @foreach($old as $key => $value)
+                                                            {{-- Pastikan key ada di attributes baru untuk menghindari error --}}
+                                                            @if(array_key_exists($key, $attributes))
+                                                                <li>
+                                                                    <strong class="font-semibold">{{ Str::title(str_replace('_', ' ', $key)) }}:</strong>
+                                                                    <span class="text-red-600 line-through">{{ is_array($value) ? json_encode($value) : Str::limit($value, 30) }}</span> → 
+                                                                    <span class="text-green-600">{{ is_array($attributes[$key]) ? json_encode($attributes[$key]) : Str::limit($attributes[$key], 30) }}</span>
+                                                                </li>
+                                                            @endif
                                                         @endforeach
-                                                    @elseif($activity->event === 'deleted' || $activity->event === 'created')
-                                                        @foreach($activity->properties['attributes'] as $key => $value)
-                                                            <li><strong>{{ $key }}:</strong> {{ $value }}</li>
+                                                    @elseif(($activity->event === 'created' || $activity->event === 'deleted') && !empty($attributes))
+                                                        @foreach($attributes as $key => $value)
+                                                            <li>
+                                                                <strong class="font-semibold">{{ Str::title(str_replace('_', ' ', $key)) }}:</strong> 
+                                                                <span>{{ is_array($value) ? json_encode($value) : Str::limit($value, 50) }}</span>
+                                                            </li>
                                                         @endforeach
                                                     @endif
                                                 </ul>

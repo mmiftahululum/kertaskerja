@@ -15,6 +15,9 @@
                             <h3 class="text-2xl font-bold text-gray-900">{{ $task->title }}</h3>
                             <p class="text-sm text-gray-500">Detail informasi untuk tugas</p>
                         </div>
+                       <a href="{{ route('tasks.edit', $task->id) . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
+    EDIT
+</a>
                         <a href="{{ url()->previous() }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
                             ← Kembali
                         </a>
@@ -123,21 +126,52 @@
                                 </ul>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500">Lampiran</label>
-                                <ul class="mt-2 space-y-1">
-                                    @forelse($task->files as $file)
-                                        <li class="text-sm text-indigo-600 hover:underline">
-                                            <a href="{{ Storage::url($file->file_path) }}" target="_blank" class="flex items-center gap-2">
-                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M15.5 14h-11a1.5 1.5 0 01-1.5-1.5V7.879a1.5 1.5 0 01.44-1.06L7.94 2.44A1.5 1.5 0 019.002 2h5.996A1.5 1.5 0 0116.5 3.5v9a1.5 1.5 0 01-1.5 1.5zM10 2.75a.75.75 0 00-.75.75v3c0 .414.336.75.75.75h3a.75.75 0 000-1.5h-2.25V3.5a.75.75 0 00-.75-.75z"></path></svg>
-                                                <span>{{ $file->file_name }}</span>
-                                            </a>
-                                        </li>
-                                    @empty
-                                        <p class="text-sm text-gray-500">Tidak ada lampiran.</p>
-                                    @endforelse
-                                </ul>
+                           <div class="mt-4">
+    <h4>Lampiran File</h4>
+    @if($task->files->isNotEmpty())
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <ul class="divide-y divide-gray-200">
+                @foreach($task->files as $file)
+                    <li class="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center min-w-0">
+                             <div class="flex-shrink-0 mr-4">
+                                @switch($file->file_type)
+                                    @case('image')
+                                        <svg class="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" /></svg>
+                                        @break
+                                    @case('pdf')
+                                        <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m9 12.75h-9" /></svg>
+                                        @break
+                                    @case('word')
+                                        <svg class="w-6 h-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5" /></svg>
+                                        @break
+                                    @case('excel')
+                                        <svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5" /></svg>
+                                        @break
+                                    @case('archive')
+                                        <svg class="w-6 h-6 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                                        @break
+                                    @default
+                                        <svg class="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                @endswitch
                             </div>
+                            <div class="min-w-0">
+                                <a href="{{ route('tasks.files.download', $file->id) }}" target="_blank" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 truncate" title="{{ $file->file_name }}">
+                                    {{ \Illuminate\Support\Str::limit($file->file_name, 50) }}
+                                </a>
+                                <p class="text-xs text-gray-500">
+                                    {{ $file->formatted_size }} &middot; Diunggah pada {{ $file->created_at->format('d M Y') }}
+                                </p>
+                            </div>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @else
+        <p>Tidak ada file lampiran.</p>
+    @endif
+</div>
                         </div>
                     </div>
 

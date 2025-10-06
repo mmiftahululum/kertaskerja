@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->string('title'); // Judul tugas
-            $table->text('description')->nullable(); // Deskripsi tugas
+            $table->longText('description')->nullable(); // Deskripsi tugas
             $table->unsignedBigInteger('parent_id')->nullable(); // Untuk sub-tugas
             $table->unsignedBigInteger('head_status_id'); // Status head (dari tabel status yang sudah ada)
             $table->unsignedBigInteger('current_status_id'); // Status child (berdasarkan grups head)

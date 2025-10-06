@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TaskFile; 
+use Illuminate\Support\Facades\Storage; 
 use App\Models\Task;
 use App\Models\Karyawan;
 use App\Models\ChildStatus;
@@ -307,7 +309,12 @@ private function buildTaskTree($tasks)
             'planned_start' => 'nullable|date',
             'planned_end' => 'nullable|date|after_or_equal:planned_start',
             'progress_percent' => 'nullable|integer|min:0|max:100',
+            'files.*' => 'file|max:10240',
         ]);
+
+          if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
 
         if ($validator->fails()) {
@@ -316,10 +323,26 @@ private function buildTaskTree($tasks)
                 ->withInput();
         }
 
-        $taskData = $request->except(['assignments']);
+        $taskData = $request->except(['assignments','files']);
         $maxOrder = Task::where('parent_id', $request->parent_id)->max('order_column');
         $taskData['order_column'] = $maxOrder + 1;
         $task = Task::create($taskData);
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                if ($file->isValid()) {
+                    $path = $file->store('public/tugas/' . $task->id);
+
+                    $task->files()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getClientMimeType(),
+                        'uploaded_by' => Auth::id(),
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            }
+        }
 
          if ($request->has('assignments') && is_array($request->assignments)) {
             // map daftar id menjadi format id => [pivot data]
@@ -501,6 +524,7 @@ public function reorder(Request $request)
         'link_names.*' => 'string|max:255',
         'link_urls' => 'nullable|array',
         'link_urls.*' => 'url',
+        'files.*' => 'file|max:10240',
     ]);
 
     if ($validator->fails()) {
@@ -511,7 +535,24 @@ public function reorder(Request $request)
 
     $oldStatusId = $task->current_status_id;
 
-    $task->update($request->except(['assignments', 'link_names', 'link_urls']));
+    $task->update($request->except(['assignments', 'link_names', 'link_urls','files']));
+
+
+    if ($request->hasFile('files')) {
+        foreach ($request->file('files') as $file) {
+            if ($file->isValid()) {
+                $path = $file->store('public/tugas/' . $task->id);
+
+                $task->files()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
+                ]);
+            }
+        }
+    }
 
     // Handle assignments
    $assignments = $request->get('assignments', []); // Ambil 'assignments', jika tidak ada, default ke array kosong.
@@ -559,6 +600,33 @@ public function reorder(Request $request)
     return redirect($redirectUrl)
         ->with('success', 'Tugas berhasil diperbarui');
 
+    }
+
+     public function deleteFile(TaskFile $file)
+    {
+        try {
+            // Opsional: Tambahkan pengecekan otorisasi di sini
+            // $this->authorize('delete', $file);
+
+            // Hapus file dari storage
+            Storage::delete($file->file_path);
+
+            // Hapus record file dari database
+            $file->delete();
+
+            // Kirim respon sukses dalam format JSON
+            return response()->json(['success' => true, 'message' => 'File berhasil dihapus.']);
+
+        } catch (\Exception $e) {
+            // Jika terjadi error, kirim respon error
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus file.'], 500);
+        }
+    }
+    
+    public function downloadFile(TaskFile $file)
+    {
+        // Anda bisa menambahkan pengecekan otorisasi di sini jika perlu
+        return Storage::download($file->file_path, $file->file_name);
     }
 
     public function updateStatus(Request $request, Task $task)
