@@ -7,7 +7,7 @@
 
     <div class="py-6">
         <div class="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                 <div class="bg-white shadow-sm rounded-lg overflow-hidden" x-data="columnManager()">
                 <div class="p-4 sm:p-6">
                    <div class="items-center justify-between mb-4">
     <div class="text-lg font-medium text-gray-900"> 
@@ -203,23 +203,48 @@
                         </div>
                     @endif
 
+
+                     {{-- (PERUBAHAN 2 DARI SINI) DROPDOWN UNTUK KOLOM --}}
+                    <div class="flex justify-end mb-4">
+                        <div @click.away="open = false" class="relative">
+                            <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                Columns <svg class="ml-2 -mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            </button>
+
+                            <div x-show="open" x-transition class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
+                                <ul class="py-1">
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.status" class="mr-2"> Status Saat Ini</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.planStart" class="mr-2"> Plan Start</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.planEnd" class="mr-2"> Plan End</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.mandaysPlan" class="mr-2"> Mandays Plan</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.actualStart" class="mr-2"> Actual Start</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.actualEnd" class="mr-2"> Actual End</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.mandaysActual" class="mr-2"> Mandays Actual</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.assignment" class="mr-2"> Assignment</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.link" class="mr-2"> Link Reference</label></li>
+                                    <li><label class="flex items-center px-4 py-2 text-sm"><input type="checkbox" x-model="columns.komentar" class="mr-2"> Komentar Terakhir</label></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- (PERUBAHAN 2 SAMPAI SINI) --}}
+
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                   <th colspan="3" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Task</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2">Status Saat Ini</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan start</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Plan End</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mandays Plan</th> 
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual start</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Actual End</th>
-
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mandays Actual</th>
-                         
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link Reference</th>
-                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/12">Komentar Terakhir</th>
+                                     <th colspan="3" class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.judul">Judul Task</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/12" colspan="2" x-show="columns.status">Status Saat Ini</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.planStart">Plan start</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.planEnd">Plan End</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.mandaysPlan">Mandays Plan</th> 
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.actualStart">Actual start</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.actualEnd">Actual End</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.mandaysActual">Mandays Actual</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.assignment">Assignment</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="columns.link">Link Reference</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/12" x-show="columns.komentar">Komentar Terakhir</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200"  id="task-list">
@@ -592,6 +617,34 @@
     margin-top: 5px;
 }
 </style>
+
+<script>
+    function columnManager() {
+        return {
+            open: false,
+            // Ambil state kolom dari Local Storage jika ada, jika tidak, set semua true
+            columns: JSON.parse(localStorage.getItem('task_columns_visibility')) || {
+                judul: true,
+                status: true,
+                planStart: true,
+                planEnd: true,
+                mandaysPlan: true,
+                actualStart: true,
+                actualEnd: true,
+                mandaysActual: true,
+                assignment: true,
+                link: true,
+                komentar: true
+            },
+            // Watcher untuk menyimpan perubahan state ke Local Storage
+            init() {
+                this.$watch('columns', (newValue) => {
+                    localStorage.setItem('task_columns_visibility', JSON.stringify(newValue));
+                });
+            }
+        }
+    }
+</script>
 
 
 <script>

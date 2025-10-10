@@ -57,7 +57,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
                 </svg>
             </button>
         </td>
-    <td class="px-1 py-1 text-xs text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700" x-show="columns.status">
         <select required
             data-task-id="{{ $task->id }}"
             onchange="updateTaskStatus(this.dataset.taskId, this.value)"
@@ -71,7 +71,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
             @endforeach
         </select>
     </td>
-        <td class="px-1 py-1 text-xs text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700" x-show="columns.status">
         <button
             type="button"
             class="btn btn-sm btn-outline-info flex items-center gap-1"
@@ -87,16 +87,16 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
     </td>
 
     <!-- Tanggal Mulai -->
-    <td class="px-1 py-1 text-xs text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700" x-show="columns.planStart" >
         {{ $task->planned_start ? $task->planned_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-xs text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700" x-show="columns.planEnd">
         {{ $task->planned_end ? $task->planned_end->format('d M y') : '-' }}
     </td>
 
-    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600" x-show="columns.mandaysPlan">
     @if($task->planned_start && $task->planned_end)
         @php
             // Pastikan keduanya adalah objek Carbon untuk perhitungan
@@ -115,16 +115,16 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
 </td>
 
      <!-- Tanggal Mulai -->
-    <td class="px-1 py-1 text-gray-700 text-xs">
+    <td class="px-1 py-1 text-gray-700 text-xs" x-show="columns.actualStart">
         {{ $task->actual_start ? $task->actual_start->format('d M y') : '-' }}
     </td>
 
      <!-- Tanggal Selesai (warna merah jika sudah lewat) -->
-    <td class="px-1 py-1 text-gray-700 text-xs">
+    <td class="px-1 py-1 text-gray-700 text-xs" x-show="columns.actualEnd">
           {{ $task->actual_end ? $task->actual_end->format('d M y') : '-' }}
     </td>
 
-    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600">
+    <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600" x-show="columns.mandaysActual">
     @if($task->actual_start && $task->actual_end)
         @php
             $start = \Carbon\Carbon::parse($task->actual_start);
@@ -141,7 +141,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
 </td>
 
 
-    <td class="px-1 py-1 text-xs text-gray-700">
+    <td class="px-1 py-1 text-xs text-gray-700" x-show="columns.assignment">
         @if($task->assignments && $task->assignments->count())
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
@@ -155,7 +155,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
         @endif
     </td>
 
-  <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900">
+  <td class="px-1 py-1 whitespace-nowrap text-xs text-gray-900" x-show="columns.link">
     @if($task->links_count > 0)
         <div class="flex items-center">
             <svg class="h-4 w-4 text-indigo-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,7 +182,7 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
 </td>
 
     <td class="px-1 py-1 text-xs text-gray-700" style="cursor: pointer;" 
-    onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})">
+    onclick="openCommentModal({{ $task->id }}, {{ json_encode($task->title) }})" x-show="columns.komentar">
     <div x-data="{ expanded: false }">
         @php
             $lastComment = $task->comments->sortByDesc('created_at')->first();
