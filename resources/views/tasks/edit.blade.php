@@ -8,7 +8,7 @@
     <div class="py-6">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
-                <form action="{{ route('tasks.update', $task->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <form action="{{ route('tasks.update', $task->id) }}" id="formTask" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     @method('PUT')
 
@@ -45,12 +45,15 @@
                                placeholder="Masukkan judul tugas" required>
                     </div>
 
-                    <div>
-                        <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                        <textarea name="description" id="description" rows="4"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="Deskripsikan tugas">{{ old('description', $task->description) }}</textarea>
-                    </div>
+                    <div class="mt-4">
+                            <x-input-label for="description" :value="__('description')" />
+                            <input type="hidden" id="content" name="description" value="{{ old('description', $task->description) }}">
+                            
+                            <div id="editor" style="height: 300px; border: 1px solid #ccc; border-radius: 5px;">
+                                {!! old('description', $task->description) !!}
+                            </div>
+                            <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                        </div>
 
                     <div class="grid grid-cols-4 gap-1">
                         <div>

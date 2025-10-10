@@ -262,7 +262,7 @@
 
             <div class="mt-6">
                 <h4 class="font-medium mb-2">Komentar Terbaru</h4>
-                <div id="comment-list" class="space-y-3 max-h-60 overflow-y-auto">
+                <div id="comment-list" class="space-y-3 max-h-80 overflow-y-auto">
                     <p class="text-gray-500 text-sm">Tidak ada komentar.</p>
                 </div>
             </div>
