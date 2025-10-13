@@ -274,6 +274,9 @@
         <ul style="list-style:none; margin:0; padding:5px 0;">
             <li><a href="#" id="context-timesheet" style="border-bottom: 1px solid #6e6d6dff; display:block; padding:8px 15px; color:#108f32; text-decoration:none;">Buat Timesheet</a></li>
             <li><a href="#" id="context-edit" style="display:block; padding:8px 15px; color:#fbbf24; text-decoration:none;">Edit</a></li>
+               <li>
+                <a href="#" id="context-assignment" style="display:block; padding:8px 15px; color:#3b82f6; text-decoration:none;"> Assignment</a>
+            </li>
             <li><a href="#" id="context-delete" style="display:block; padding:8px 15px; color:#dc2626; text-decoration:none;">Hapus</a></li>
         </ul>
     </div>
@@ -325,8 +328,6 @@
         &times;
     </button>
 </div>
-       
-
        
 
         <div id="status-timeline-container" class="mt-4 space-y-4">
@@ -450,6 +451,34 @@
   
 </form>
 
+
+<div id="assignment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-4xl mx-4 p-6">
+            <h3 class="text-lg font-semibold mb-4" id="assignment-modal-title">Kelola Assignment untuk Task</h3>
+            
+            <form id="assignment-form" method="POST" action="">
+                @csrf
+                @method('POST')
+                <input type="hidden" name="_redirect_params" id="assignmentRedirectParams">
+
+                <div>
+                    <label for="assignment-select" class="block text-sm font-medium text-gray-700">Pilih Karyawan</label>
+                    <select name="assignments[]" id="assignment-select" multiple data-placeholder="Cari dan pilih karyawan...">
+                        {{-- Opsi karyawan akan diisi oleh JavaScript --}}
+                        @foreach($employees as $employee)
+                            <option value="{{ $employee->id }}">{{ $employee->nama_karyawan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeAssignmentModal()" class="px-4 py-2 bg-gray-300 rounded-md">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </x-app-layout>
 
  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -461,6 +490,35 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
  @include('layouts.tiny')
+
+ <style>
+    /* Menargetkan menu klik kanan berdasarkan ID-nya */
+    #context-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 5px 0;
+    }
+
+    /* Menargetkan setiap item link di dalam menu */
+    #context-menu a {
+        display: block;
+        padding: 8px 15px;
+        text-decoration: none;
+        transition: background-color 0.2s, color 0.2s; /* Animasi hover halus */
+    }
+
+    /* INI BAGIAN UTAMANYA: Efek saat kursor mouse melintas (hover) */
+    #context-menu a:hover {
+        background-color: #e6e6e6ff; /* Warna biru (Anda bisa ganti sesuai selera) */
+        color: #ffffff; /* Warna teks menjadi putih */
+    }
+
+    /* Memberi warna spesifik untuk setiap link (seperti yang sudah ada) */
+    #context-timesheet { color: #108f32; }
+    #context-edit { color: #fbbf24; }
+    #context-assignment { color: #3b82f6; }
+    #context-delete { color: #dc2626; }
+</style>
 
 <style>
     .ts-control,
@@ -619,6 +677,117 @@
 </style>
 
 <script>
+
+    // (PERUBAHAN 3 DARI SINI) SCRIPT BARU DAN MODIFIKASI UNTUK CONTEXT MENU & ASSIGNMENT
+    let assignmentTomSelect = null; // Variabel global untuk instance TomSelect
+
+   // Ganti fungsi lama dengan yang baru ini
+function openAssignmentModal(taskId, taskTitle) {
+    const modal = document.getElementById('assignment-modal');
+    const title = document.getElementById('assignment-modal-title');
+    const form = document.getElementById('assignment-form');
+    const redirectInput = document.getElementById('assignmentRedirectParams');
+
+    title.innerText = 'Kelola Assignment untuk: ' + taskTitle;
+    form.action = `/tasks/${taskId}/assignments`;
+    redirectInput.value = window.location.search;
+
+    // Ambil baris (tr) dari task yang di-klik kanan
+    const taskRow = document.querySelector(`.task-row[data-task-id="${taskId}"]`);
+    if (!taskRow) return;
+
+    // Ambil string JSON dari atribut data dan ubah menjadi array JavaScript
+    const assignedIds = JSON.parse(taskRow.dataset.assignedIds || '[]');
+
+    if (assignmentTomSelect) {
+        // Langsung set value di TomSelect menggunakan array ID
+        assignmentTomSelect.setValue(assignedIds, true); // `true` agar tidak trigger event change
+        
+        // Reset tampilan & buka dropdown
+        assignmentTomSelect.clearCache();
+        assignmentTomSelect.setTextboxValue('');
+        assignmentTomSelect.settings.placeholder = 'Cari dan pilih karyawan...';
+        assignmentTomSelect.refreshItems();
+        assignmentTomSelect.open();
+    }
+
+    modal.classList.remove('hidden');
+}
+// Fungsi untuk menutup modal assignment
+function closeAssignmentModal() {
+    document.getElementById('assignment-modal').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Inisialisasi TomSelect untuk modal assignment
+    const assignmentSelect = document.getElementById('assignment-select');
+    if (assignmentSelect) {
+        assignmentTomSelect = new TomSelect(assignmentSelect, {
+            plugins: ['remove_button'],
+            persist: false,
+        });
+    }
+
+    // --- MODIFIKASI PADA Event Listener Context Menu ---
+    const contextMenu = document.getElementById('context-menu');
+    const contextEdit = document.getElementById('context-edit');
+    const contextDelete = document.getElementById('context-delete');
+    const contextTimesheet = document.getElementById('context-timesheet');
+    const contextAssignment = document.getElementById('context-assignment'); // Item menu baru
+    const deleteTaskForm = document.getElementById('delete-task-form');
+    const taskRows = document.querySelectorAll('.task-row');
+
+    let activeDeleteUrl = null;
+
+    taskRows.forEach(function (row) {
+        row.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            
+            const editUrl = row.getAttribute('data-edit-url');
+            const deleteUrl = row.getAttribute('data-delete-url');
+            const taskId = row.getAttribute('data-task-id');
+            const taskTitle = row.getAttribute('data-task-title') || 'Task'; // Ambil judul task
+            const isAssignedToMe = row.getAttribute('data-is-assigned-to-me') === 'true';
+            const redirectParams = window.location.search;
+
+            contextEdit.href = editUrl + redirectParams;
+            
+            if (isAssignedToMe) {
+                contextTimesheet.href = `{{ url('/timesheets/create') }}?task_id=${taskId}`;
+                contextTimesheet.parentElement.style.display = 'block';
+            } else {
+                contextTimesheet.parentElement.style.display = 'none';
+            }
+
+            // (BARU) Hubungkan menu assignment dengan fungsinya
+            contextAssignment.onclick = () => openAssignmentModal(taskId, taskTitle);
+            
+            activeDeleteUrl = deleteUrl;
+
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.display = 'block';
+        });
+    });
+    
+    contextDelete.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (activeDeleteUrl && confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+            document.getElementById('deleteRedirectParams').value = window.location.search;
+            deleteTaskForm.action = activeDeleteUrl;
+            deleteTaskForm.submit();
+        }
+    });
+
+    window.addEventListener('click', function () {
+        if (contextMenu.style.display === 'block') {
+            contextMenu.style.display = 'none';
+            activeDeleteUrl = null; 
+        }
+    });
+});
+// (PERUBAHAN 3 SAMPAI SINI)
+
     function columnManager() {
         return {
             open: false,
@@ -819,6 +988,8 @@ function openSaveBookmarkModal() {
 function closeSaveBookmarkModal() {
     document.getElementById('saveBookmarkModal').classList.add('hidden');
 }
+
+
 
     
     // Script untuk Select2 status task
@@ -1059,7 +1230,6 @@ $(document).ready(function () {
 document.addEventListener('DOMContentLoaded', function() {
     var taskTimelineModal = document.getElementById('taskStatusTimelineModal');
     if (taskTimelineModal) {
-        console.log('Modal found');
         taskTimelineModal.addEventListener('show.bs.modal', function (event) {
             // Button that triggered the modal
             var button = event.relatedTarget;

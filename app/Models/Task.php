@@ -90,7 +90,7 @@ class Task extends Model
     public function assignments(): BelongsToMany
     {
         return $this->belongsToMany(Karyawan::class, 'task_assignments', 'task_id', 'karyawan_id')
-            ->withPivot(['assigned_at', 'completed_at', 'is_completed'])
+            ->withPivot(['completed_at', 'is_completed'])
             ->withTimestamps();
     }
 

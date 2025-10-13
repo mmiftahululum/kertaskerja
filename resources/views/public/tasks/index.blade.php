@@ -931,7 +931,6 @@ $(document).ready(function () {
 document.addEventListener('DOMContentLoaded', function() {
     var taskTimelineModal = document.getElementById('taskStatusTimelineModal');
     if (taskTimelineModal) {
-        console.log('Modal found');
         taskTimelineModal.addEventListener('show.bs.modal', function (event) {
             // Button that triggered the modal
             var button = event.relatedTarget;

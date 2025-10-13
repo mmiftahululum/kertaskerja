@@ -442,6 +442,27 @@ public function reorder(Request $request)
      * @param int $id
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
+
+
+      public function updateAssignments(Request $request, Task $task)
+    {
+        // Validasi bahwa 'assignments' adalah array, bisa juga kosong
+        $request->validate([
+            'assignments' => 'nullable|array',
+            'assignments.*' => 'exists:karyawans,id', // Pastikan semua ID valid
+        ]);
+
+        // sync() adalah cara termudah di Laravel untuk mengelola relasi many-to-many.
+        // Ia akan otomatis menambah yang baru, dan menghapus yang tidak ada di array.
+        $task->assignments()->sync($request->input('assignments', []));
+
+        // Ambil parameter redirect dari form
+        $redirectParams = $request->input('_redirect_params', '');
+
+        return redirect()->to(route('tasks.index') . $redirectParams)
+                         ->with('success', 'Assignment untuk task "' . $task->title . '" berhasil diperbarui.');
+    }
+    
    public function edit($id)
     {
         $task = Task::with(['assignments', 'links', 'parent'])->find($id);

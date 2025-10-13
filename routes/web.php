@@ -92,8 +92,11 @@ Route::middleware('auth')->group(function () {
     Route::post('tasks/reparent', [TaskController::class, 'reparent'])->name('tasks.reparent');
 
     Route::patch('/tasks/{task}/set-parent', [TaskController::class, 'setParent'])->name('tasks.set-parent');
-  
     Route::get('/tasks/view/{task}', [TaskController::class, 'show'])->name('tasks.view');
+
+    
+  Route::get('/tasks/{task}/assignments', [TaskController::class, 'getAssignments']);
+  Route::post('/tasks/{task}/assignments', [TaskController::class, 'updateAssignments'])->name('tasks.assignments.update');
 
     Route::post('/tasks/bookmarks', [App\Http\Controllers\TaskFilterBookmarkController::class, 'store'])->name('tasks.bookmarks.store');
     Route::delete('/tasks/bookmarks/{bookmark}', [App\Http\Controllers\TaskFilterBookmarkController::class, 'destroy'])->name('tasks.bookmarks.destroy');

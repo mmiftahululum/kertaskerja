@@ -1,6 +1,7 @@
-
 @php
     $isAssignedToMe = $task->assignments->contains('id', $currentKaryawanId);
+    // (BARU) Ambil semua ID karyawan yang di-assign dan ubah menjadi JSON
+    $assignedIdsJson = json_encode($task->assignments->pluck('id'));
 @endphp
 
 <tr style="background:{{ $task->currentStatus->status_color }}0D; padding-left: {{ $level * 20 }}px;" class="{{ $level > 0 ? 'child-task' : '' }} task-row" 
@@ -11,6 +12,8 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
  data-parent-id="{{ $task->parent_id ?? 'root' }}"
  data-childid="{{ $task->id }}" 
  data-task-id="{{ $task->id }}"
+ data-assigned-ids="{{ $assignedIdsJson }}"
+data-task-title="{{ $task->title }}" 
  data-level="{{ $level }}"
  x-data="{ open: false }">
 
@@ -145,7 +148,8 @@ data-delete-url="{{ route('tasks.destroy', $task) }}"
         @if($task->assignments && $task->assignments->count())
             <ul class="list-inside list-disc">
                 @foreach($task->assignments as $assignment)
-                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}?text={{ $task->title }}"><span class="mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
+                  <a target="blank" href="https://wa.me/{{  $assignment->phone_no }}?text={{ $task->title }}">
+                    <span class="assignment-nickname mb-1 inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
                         {{ $assignment->nickname }}
                     </span></a>
                 @endforeach
