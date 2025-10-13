@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('task_id');
             $table->unsignedBigInteger('karyawan_id'); // Karyawan yang diassign
-            $table->timestamp('assigned_at');
+            $table->timestamp('assigned_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->boolean('is_completed')->default(false);
 

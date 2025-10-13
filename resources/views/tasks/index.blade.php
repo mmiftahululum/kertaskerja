@@ -205,7 +205,28 @@
 
 
                      {{-- (PERUBAHAN 2 DARI SINI) DROPDOWN UNTUK KOLOM --}}
-                    <div class="flex justify-end mb-4">
+                    <div class="flex justify-end items-center gap-2 mb-4">
+
+
+                                <div x-data="{ copied: false }" class="relative">
+                    <button
+                      @click="
+                            let publicUrl = '{{ route('public.tasks.index') }}';
+                            let currentFilters = window.location.search;
+                            copyToClipboard(publicUrl + currentFilters);
+                            copied = true;
+                            setTimeout(() => { copied = false }, 2000);
+                        "
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-green-100 border border-transparent rounded-md font-semibold text-xs text-green-700 uppercase tracking-widest hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all"
+                        :class="{ 'bg-green-600 text-white': copied }"
+                    >
+                        <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <svg x-show="copied" style="display: none;" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        <span x-text="copied ? 'Copied!' : 'Copy Link'"></span>
+                    </button>
+                </div>
+
+
                         <div @click.away="open = false" class="relative">
                             <button @click="open = !open" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                 Columns <svg class="ml-2 -mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
@@ -974,6 +995,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+
+    function copyToClipboard(text) {
+    // Coba metode modern terlebih dahulu (bekerja di HTTPS)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+        return;
+    }
+
+    // Metode fallback untuk HTTP atau browser lama
+    let textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed"; // Mencegah scrolling ke bawah
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+    } catch (err) {
+        console.error('Gagal menyalin teks: ', err);
+    }
+    document.body.removeChild(textArea);
+}
 
     // (BARU) Script untuk Modal Bookmark
 function openSaveBookmarkModal() {
