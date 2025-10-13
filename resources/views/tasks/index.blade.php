@@ -482,7 +482,7 @@
                 @method('POST')
                 <input type="hidden" name="_redirect_params" id="assignmentRedirectParams">
 
-                <div>
+                <div style="height: 220px;">
                     <label for="assignment-select" class="block text-sm font-medium text-gray-700">Pilih Karyawan</label>
                     <select name="assignments[]" id="assignment-select" multiple data-placeholder="Cari dan pilih karyawan...">
                         {{-- Opsi karyawan akan diisi oleh JavaScript --}}
@@ -733,6 +733,8 @@ function openAssignmentModal(taskId, taskTitle) {
     }
 
     modal.classList.remove('hidden');
+
+    assignmentTomSelect.focus(); 
 }
 // Fungsi untuk menutup modal assignment
 function closeAssignmentModal() {
