@@ -969,6 +969,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupModalOutsideClick('comment-modal', closeCommentModal);
     setupModalOutsideClick('taskStatusTimelineModal', closeTaskStatusTimelineModal);
     setupModalOutsideClick('createChildTaskModal', closeCreateChildModal);
+    setupModalOutsideClick('assignment-modal', closeCreateChildModal);
 });
 </script>
 
@@ -1381,6 +1382,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('comment-modal').classList.add('hidden');
         document.getElementById('comment-list').innerHTML = '<p class="text-gray-500 text-sm">Tidak ada komentar.</p>';
     }
+
+
+
 
  function loadComments(taskId) {
     fetch(`/tasks/${taskId}/comments`)
