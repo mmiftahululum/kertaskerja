@@ -102,17 +102,29 @@ data-task-title="{{ $task->title }}"
     <td class="px-1 py-2 whitespace-nowrap text-xs text-gray-600" x-show="columns.mandaysPlan">
     @if($task->planned_start && $task->planned_end)
         @php
-            // Pastikan keduanya adalah objek Carbon untuk perhitungan
             $start = \Carbon\Carbon::parse($task->planned_start);
             $end = \Carbon\Carbon::parse($task->planned_end);
+            $today = \Carbon\Carbon::now();
             
-            // Hitung selisih hari, tambahkan 1 agar inklusif
-            // Contoh: 1 Jan - 1 Jan dihitung 1 hari
             $mandays = $start->diffInDays($end) + 1;
+
+            // Hitung sisa hari hanya jika tanggal Plan End belum lewat
+            $remainingDays = null;
+            if ($end->isFuture()) {
+                $remainingDays = $today->diffInDays($end);
+            }
         @endphp
-        <span class="font-medium">{{ $mandays }} d</span>
+        
+        <span class="font-medium">{{ $mandays }}d</span>
+
+        {{-- Tampilkan sisa hari jika ada --}}
+        @if($remainingDays !== null)
+            <br/>
+            <span class="ml-1 text-green-500">
+                (-{{ $remainingDays }}d)
+            </span>
+        @endif
     @else
-        {{-- Jika salah satu tanggal kosong, tampilkan strip --}}
         -
     @endif
 </td>
