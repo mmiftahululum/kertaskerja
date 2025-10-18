@@ -698,6 +698,25 @@
 </style>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        // 2. Ambil posisi scroll yang tersimpan
+        var scrollpos = sessionStorage.getItem('scrollpos');
+        
+        // 3. Jika ada, kembalikan posisi scroll
+        if (scrollpos) {
+            window.scrollTo(0, scrollpos);
+            sessionStorage.removeItem('scrollpos'); // Hapus setelah digunakan
+        }
+
+        // 1. Saat pengguna akan meninggalkan halaman (refresh/pindah)
+        window.addEventListener("beforeunload", function(e) {
+            // Simpan posisi scroll saat ini
+            sessionStorage.setItem('scrollpos', window.scrollY);
+        });
+    });
+</script>
+
+<script>
 
     // (PERUBAHAN 3 DARI SINI) SCRIPT BARU DAN MODIFIKASI UNTUK CONTEXT MENU & ASSIGNMENT
     let assignmentTomSelect = null; // Variabel global untuk instance TomSelect
