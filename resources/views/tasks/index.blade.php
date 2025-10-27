@@ -469,7 +469,6 @@
     @csrf
     <input type="hidden" name="_redirect_params" id="deleteRedirectParams">
     @method('DELETE')
-  
 </form>
 
 
