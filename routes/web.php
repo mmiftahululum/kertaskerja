@@ -11,6 +11,7 @@ use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TimesheetController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\UserTodoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +113,9 @@ Route::middleware('auth')->group(function () {
     $childStatuses = App\Models\ChildStatus::where('head_status_id', $headStatusId)->get();
         return response()->json($childStatuses);
     })->name('child-statuses.byHeadStatus');
+
+    Route::get('/todo-list', [UserTodoController::class, 'index'])->name('todos.index');
+    Route::post('/todo-list/{todo}/complete', [UserTodoController::class, 'complete'])->name('todos.complete');
 
    
 

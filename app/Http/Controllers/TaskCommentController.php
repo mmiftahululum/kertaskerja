@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Models\UserTodo;
 
 class TaskCommentController extends Controller
 {
@@ -36,6 +37,15 @@ class TaskCommentController extends Controller
         // Jika ada metadata tambahan, bisa ditambahkan di sini, misal:
         // $comment->metadata = ['some_key' => 'some_value']; 
         $comment->save();
+
+        if ($request->boolean('is_todo_list')) {
+            UserTodo::create([
+                'user_id' => auth()->id(),
+                'task_comment_id' => $comment->id,
+                'task_id' => $task->id,
+                'content' => $request->comment,
+            ]);
+        }
 
         // Kode BARU
         $redirectUrl = route('tasks.index') . $request->input('_redirect_params', '');

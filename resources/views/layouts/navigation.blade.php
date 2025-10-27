@@ -36,9 +36,12 @@
                                 <x-dropdown-link :href="route('tasks.index')" :active="request()->routeIs('tasks.index')">
                                     {{ __('Tugas Semua') }}
                                 </x-dropdown-link>
-
+                                <x-dropdown-link :href="route('todos.index')" :active="request()->routeIs('tasks.index')">
+                                    {{ __('ToDo List') }}
+                                </x-dropdown-link>
                                 {{-- Anda bisa menambahkan lebih banyak link di sini --}}
                             </x-slot>
+                            
                         </x-dropdown>
                     </div>
 

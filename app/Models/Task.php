@@ -51,6 +51,11 @@ class Task extends Model
         return $this->belongsTo(Task::class, 'parent_id');
     }
 
+    public function masterApp(): BelongsTo
+    {
+        return $this->belongsTo(MasterApp::class, 'parent_id');
+    }
+
     // Relasi: Child tasks (tugas anak)
     public function children(): HasMany
     {
@@ -138,6 +143,36 @@ class Task extends Model
     public function getLinksCountAttribute()
     {
         return $this->links()->count();
+    }
+
+    public function parentRecursive(): BelongsTo
+    {
+        return $this->parent()->with('parentRecursive');
+    }
+
+    /**
+     * Helper untuk membuat string path dari semua parent.
+     * contoh: "Project A / Fitur B / "
+     */
+    public function getParentPathString(): string
+    {
+        $path = collect();
+        
+        // Gunakan relasi 'parentRecursive' jika sudah di-load (hasil eager-loading)
+        // Jika tidak, gunakan 'parent' (fallback, tapi lebih lambat)
+        $current = $this->parentRecursive ?? $this->parent; 
+
+        while ($current) {
+            $path->prepend($current->title);
+            $current = $current->parentRecursive ?? $current->parent;
+        }
+        
+        if ($path->isEmpty()) {
+            return ''; // Tidak ada parent, kembalikan string kosong
+        }
+        
+        // Kembalikan: "Parent 1 / Parent 2 / " (dengan spasi di akhir)
+        return $path->implode(' / ') . ' / ';
     }
     
 }

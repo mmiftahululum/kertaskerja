@@ -326,6 +326,13 @@
                           rows="3"
                           placeholder="Tuliskan komentar…"
                           required></input>
+
+                          <div class="mt-4 flex items-center">
+    <input id="is_todo_list" name="is_todo_list" type="checkbox" value="1" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+    <label for="is_todo_list" class="ml-2 block text-sm text-gray-900">
+        Jadikan To-do List Hari Ini
+    </label>
+</div>
                 <div class="flex justify-end space-x-2">
                     <button type="button"
                             class="px-4 py-2 bg-gray-300 rounded"
