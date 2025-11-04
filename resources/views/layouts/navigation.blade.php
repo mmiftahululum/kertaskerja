@@ -30,9 +30,27 @@
                             </x-slot>
 
                             <x-slot name="content">
+
+                                @if(isset($bookmarks) && $bookmarks->isNotEmpty())
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">
+                                        {{ __('Filter Tersimpan') }}
+                                    </div>
+                                    @foreach($bookmarks as $bookmark)
+                                        {{-- Menggunakan route('tasks.index', $bookmark->filters) untuk menerapkan filter --}}
+                                        <x-dropdown-link href="{{ route('tasks.index', $bookmark->filters) }}">
+                                            {{ $bookmark->name }}
+                                        </x-dropdown-link>
+                                    @endforeach
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                @endif
+
                                  <x-dropdown-link href="{{ route('tasks.index') }}?filter_mytask=1">
                                     {{ __('Tugas Saya') }}
                                 </x-dropdown-link>
+
+                              
+
                                 <x-dropdown-link :href="route('tasks.index')" :active="request()->routeIs('tasks.index')">
                                     {{ __('Tugas Semua') }}
                                 </x-dropdown-link>
